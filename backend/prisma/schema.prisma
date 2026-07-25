@@ -33,11 +33,18 @@ model Backup {
   id String @id @default(uuid())
 
   projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  filename String
+  filename String?
   status   String  @default("pending")
-  size     BigInt?
+
+  size         BigInt?
+  errorMessage String?
+
+  startedAt  DateTime?
+  finishedAt DateTime?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }

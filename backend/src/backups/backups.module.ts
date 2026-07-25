@@ -3,10 +3,13 @@ import { BackupsController } from './backups.controller';
 import { BackupsService } from './backups.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { BackupExecutorService } from './backup-executor.service';
+import { StorageModule } from '../storage/storage.module';
+import { BackupRunnerService } from './backup-runner.service';
 
 @Module({
     imports: [
         PrismaModule,
+        StorageModule,
     ],
     controllers: [
         BackupsController,
@@ -14,6 +17,7 @@ import { BackupExecutorService } from './backup-executor.service';
     providers: [
         BackupsService,
         BackupExecutorService,
+        BackupRunnerService,
     ],
 })
 export class BackupsModule { }

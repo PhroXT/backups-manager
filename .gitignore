@@ -59,3 +59,11 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Docker
 docker-compose.yml
+
+# MinIO
+/data
+/storage
+/backend/storage
+
+# Prisma
+/backend/prisma/migrations
