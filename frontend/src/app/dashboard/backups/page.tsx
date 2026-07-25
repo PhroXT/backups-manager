@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/src/lib/api";
-
+import { formatBytes, formatDate } from "@/src/lib/format"
 
 type Backup = {
     id: string;
     filename: string;
+    size: string;
     status: string;
     createdAt: string;
     project: {
@@ -67,6 +68,10 @@ export default function BackupsPage() {
                             </th>
 
                             <th className="p-3 text-left text-gray-700">
+                                Size
+                            </th>
+
+                            <th className="p-3 text-left text-gray-700">
                                 Status
                             </th>
 
@@ -97,16 +102,16 @@ export default function BackupsPage() {
                                     {backup.filename}
                                 </td>
 
+                                <td className="p-3 text-gray-700">
+                                    {formatBytes(backup.size)}
+                                </td>
 
                                 <td className="p-3 text-gray-700">
                                     {backup.status}
                                 </td>
 
-
                                 <td className="p-3 text-gray-700">
-                                    {new Date(
-                                        backup.createdAt
-                                    ).toLocaleString()}
+                                    {formatDate(backup.createdAt)}
                                 </td>
 
                             </tr>

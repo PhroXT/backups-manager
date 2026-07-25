@@ -1,7 +1,7 @@
 'use client';
 
 import { useBackups } from '@/src/hooks/useBackups';
-
+import StatusBadge from "@/src/components/StatusBadge";
 
 export default function BackupsPage() {
 
@@ -42,7 +42,11 @@ export default function BackupsPage() {
                         </div>
 
                         <div>
-                            Estado: {backup.status}
+                            {backup.size}
+                        </div>
+
+                        <div>
+                            Estado: <StatusBadge status={backup.status} />
                         </div>
 
                     </div>
