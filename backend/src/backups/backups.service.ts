@@ -1,23 +1,49 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class BackupsService {
 
     constructor(
         private prisma: PrismaService,
+
+        @InjectQueue('backups')
+        private backupsQueue: Queue,
     ) { }
 
+    async create(projectId: string) {
 
-    create(projectId: string) {
-
-        return this.prisma.backup.create({
+        const backup = await this.prisma.backup.create({
             data: {
                 projectId,
                 filename: 'pending.dump',
                 status: 'pending',
             },
         });
+
+
+        await this.backupsQueue.add(
+            'backup',
+            {
+                backupId: backup.id,
+            },
+            {
+                attempts: 3,
+
+                backoff: {
+                    type: 'exponential',
+                    delay: 10000,
+                },
+
+                removeOnComplete: true,
+                removeOnFail: false,
+            },
+        );
+
+
+        return backup;
 
     }
 

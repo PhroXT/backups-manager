@@ -21,7 +21,7 @@ export class BackupRunnerService {
 
         const command = `
       docker exec backups-manager-tools \
-      sh -c "PGPASSWORD='${config.password}' pg_dump \
+      sh -c "PGPASSWORD='${config.password}' PGSSLMODE=disable pg_dump \
       -h ${config.host} \
       -p ${config.port} \
       -U ${config.username} \

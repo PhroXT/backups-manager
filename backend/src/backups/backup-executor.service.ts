@@ -72,16 +72,15 @@ export class BackupExecutorService {
             );
 
 
-            const stats = fs.statSync(file);
-
+            const stats = await fs.promises.stat(file);
 
             await this.prisma.backup.update({
                 where: {
                     id: backupId,
                 },
                 data: {
-                    filename,
-                    size: BigInt(stats.size),
+                    filename: `${backupId}.dump`,
+                    size: stats.size,
                     status: 'completed',
                     finishedAt: new Date(),
                 },
