@@ -16,6 +16,9 @@ export class ConnectionService {
             database: config.database,
             user: config.username,
             password: config.password,
+            ssl: {
+                rejectUnauthorized: false,
+            },
         });
 
         try {
