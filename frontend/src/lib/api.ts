@@ -1,17 +1,29 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function apiFetch(
+
+export async function apiFetch<T>(
   endpoint: string,
-  options?: RequestInit
-) {
+  options?: RequestInit,
+): Promise<T> {
+
   const response = await fetch(
     `${API_URL}${endpoint}`,
-    options
+    {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+      },
+    }
   );
 
+
   if (!response.ok) {
-    throw new Error("API request failed");
+    throw new Error(
+      `API error: ${response.status}`
+    );
   }
+
 
   return response.json();
 }

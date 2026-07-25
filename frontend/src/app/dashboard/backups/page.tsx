@@ -23,7 +23,7 @@ export default function BackupsPage() {
 
     useEffect(() => {
 
-        apiFetch("/backups")
+        apiFetch<Backup[]>("/backups")
             .then(setBackups)
             .finally(() => setLoading(false));
 

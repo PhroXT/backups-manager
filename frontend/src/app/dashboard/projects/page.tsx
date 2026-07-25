@@ -20,9 +20,39 @@ export default function ProjectsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [testing, setTesting] = useState<string | null>(null);
+    const [running, setRunning] = useState<string | null>(null);
+
+    async function runBackup(id: string) {
+
+        setRunning(id);
+
+        try {
+
+            const result = await apiFetch(
+                `/backups/project/${id}`,
+                {
+                    method: "POST",
+                }
+            );
+
+
+            alert("Backup started successfully");
+
+
+        } catch {
+
+            alert("Backup failed");
+
+        } finally {
+
+            setRunning(null);
+
+        }
+
+    }
 
     useEffect(() => {
-        apiFetch("/projects")
+        apiFetch<Project[]>("/projects")
             .then(setProjects)
             .catch(() => setError("Could not load projects"))
             .finally(() => setLoading(false));
@@ -42,7 +72,7 @@ export default function ProjectsPage() {
 
         try {
 
-            const result = await apiFetch(
+            const result = await apiFetch<Project[]>(
                 `/projects/${id}/test-connection`,
                 {
                     method: "POST",
@@ -50,10 +80,10 @@ export default function ProjectsPage() {
             );
 
 
-            if (result.success) {
+            if (result) {
                 alert("Connection successful");
             } else {
-                alert(result.message);
+                alert(result);
             }
 
 
@@ -197,7 +227,27 @@ export default function ProjectsPage() {
                                         }
 
                                     </button>
+                                    <button
+                                        onClick={() => runBackup(project.id)}
+                                        disabled={running === project.id}
+                                        className="
+        border
+        border-gray-300
+        px-3
+        py-1
+        rounded
+        text-sm
+        hover:bg-gray-100
+        disabled:opacity-50
+    "
+                                    >
+                                        {
+                                            running === project.id
+                                                ? "Running..."
+                                                : "Run Backup"
+                                        }
 
+                                    </button>
                                 </td>
                             </tr>
 

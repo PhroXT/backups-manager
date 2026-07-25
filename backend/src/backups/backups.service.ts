@@ -21,9 +21,9 @@ export class BackupsService {
 
     }
 
-    findAll() {
+    async findAll() {
 
-        return this.prisma.backup.findMany({
+        const backups = await this.prisma.backup.findMany({
             include: {
                 project: {
                     select: {
@@ -37,11 +37,17 @@ export class BackupsService {
             },
         });
 
+
+        return backups.map((backup) => ({
+            ...backup,
+            size: backup.size?.toString() ?? null,
+        }));
+
     }
 
-    findOne(id: string) {
+    async findOne(id: string) {
 
-        return this.prisma.backup.findUnique({
+        const backup = await this.prisma.backup.findUnique({
             where: {
                 id,
             },
@@ -54,6 +60,17 @@ export class BackupsService {
                 },
             },
         });
+
+
+        if (!backup) {
+            return null;
+        }
+
+
+        return {
+            ...backup,
+            size: backup.size?.toString() ?? null,
+        };
 
     }
 
