@@ -42,4 +42,12 @@ export class BackupsController {
         return this.backupsService.findAll();
     }
 
+
+    @Get(':id')
+    findOne(
+        @Param('id') id: string,
+    ) {
+        return this.backupsService.findOne(id);
+    }
+
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/src/lib/api";
 import Link from "next/link";
 
 type Project = {

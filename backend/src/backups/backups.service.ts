@@ -21,12 +21,37 @@ export class BackupsService {
 
     }
 
-
     findAll() {
 
         return this.prisma.backup.findMany({
             include: {
-                project: true,
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+
+    }
+
+    findOne(id: string) {
+
+        return this.prisma.backup.findUnique({
+            where: {
+                id,
+            },
+            include: {
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
             },
         });
 

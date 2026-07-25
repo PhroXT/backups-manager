@@ -16,68 +16,104 @@ export class BackupExecutorService {
 
     async execute(backupId: string) {
 
-        const backup = await this.prisma.backup.findUnique({
-            where: {
-                id: backupId,
-            },
-            include: {
-                project: true,
-            },
-        });
-
-
-        if (!backup) {
-            throw new Error('Backup not found');
-        }
-
-
-        const filename = `${backup.id}.dump`;
-
-
-        await this.runner.runPgDump({
-            host: backup.project.host,
-            port: backup.project.port,
-            database: backup.project.database,
-            username: backup.project.username,
-            password: backup.project.password,
-            filename,
-        });
-
-
-        const file = path.join(
-            process.cwd(),
-            '..',
-            'storage',
-            filename,
-        );
-
-
-        await this.storage.uploadFile(
-            'backups',
-            filename,
-            file,
-        );
-
-
         await this.prisma.backup.update({
             where: {
                 id: backupId,
             },
             data: {
-                filename,
-                status: 'completed',
+                status: 'running',
+                startedAt: new Date(),
             },
         });
 
 
-        console.log('Real backup completed');
+        try {
+
+            const backup = await this.prisma.backup.findUnique({
+                where: {
+                    id: backupId,
+                },
+                include: {
+                    project: true,
+                },
+            });
 
 
-        return {
-            success: true,
-            filename,
-        };
+            if (!backup) {
+                throw new Error('Backup not found');
+            }
 
+
+            const filename = `${backup.id}.dump`;
+
+
+            await this.runner.runPgDump({
+                host: backup.project.host,
+                port: backup.project.port,
+                database: backup.project.database,
+                username: backup.project.username,
+                password: backup.project.password,
+                filename,
+            });
+
+
+            const file = path.join(
+                process.cwd(),
+                '..',
+                'storage',
+                filename,
+            );
+
+
+            await this.storage.uploadFile(
+                'backups',
+                filename,
+                file,
+            );
+
+
+            const stats = fs.statSync(file);
+
+
+            await this.prisma.backup.update({
+                where: {
+                    id: backupId,
+                },
+                data: {
+                    filename,
+                    size: BigInt(stats.size),
+                    status: 'completed',
+                    finishedAt: new Date(),
+                },
+            });
+
+
+            return {
+                success: true,
+                filename,
+            };
+
+
+        } catch (error) {
+
+
+            await this.prisma.backup.update({
+                where: {
+                    id: backupId,
+                },
+                data: {
+                    status: 'failed',
+                    errorMessage:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unknown error',
+                    finishedAt: new Date(),
+                },
+            });
+
+
+            throw error;
+        }
     }
 
 }
