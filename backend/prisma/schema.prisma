@@ -27,6 +27,7 @@ model Project {
   updatedAt DateTime @updatedAt
 
   backups Backup[]
+  schedules Schedule[]
 }
 
 model Backup {
@@ -47,4 +48,17 @@ model Backup {
   updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Schedule {
+  id        String   @id @default(uuid())
+
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  cron      String
+  enabled   Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
