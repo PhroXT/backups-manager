@@ -14,7 +14,6 @@ export class BackupsService {
     ) { }
 
     async create(projectId: string) {
-
         const backup = await this.prisma.backup.create({
             data: {
                 projectId,
@@ -23,6 +22,7 @@ export class BackupsService {
             },
         });
 
+        console.log('Creating backup for project: ', projectId);
 
         await this.backupsQueue.add(
             'backup',
@@ -41,7 +41,6 @@ export class BackupsService {
                 removeOnFail: false,
             },
         );
-
 
         return backup;
 

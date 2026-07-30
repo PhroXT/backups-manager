@@ -21,4 +21,16 @@ export class SchedulesService {
 
     }
 
+    async updateLastRun(id: string) {
+
+        return this.prisma.schedule.update({
+            where: {
+                id,
+            },
+            data: {
+                lastRun: new Date(),
+            },
+        });
+
+    }
 }

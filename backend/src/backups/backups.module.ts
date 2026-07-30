@@ -25,7 +25,9 @@ import { BackupProcessor } from './backup.processor';
         BackupRunnerService,
         BackupProcessor,
     ],
-
+    exports: [
+        BackupsService,
+    ],
 })
 
 export class BackupsModule { }
