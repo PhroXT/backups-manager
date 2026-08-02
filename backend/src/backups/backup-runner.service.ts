@@ -1,13 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
-
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class BackupRunnerService {
-
 
     async runPgDump(config: {
         host: string;
@@ -15,30 +13,37 @@ export class BackupRunnerService {
         database: string;
         username: string;
         password: string;
+        sslMode: string;
         filename: string;
     }) {
+        console.log({
+            user: config.username,
+            passwordLength: config.password.length,
+            host: config.host,
+            database: config.database,
+        });
 
+        const args = [
+            'exec',
+            '-e', `PGPASSWORD=${config.password}`,
+            '-e', `PGSSLMODE=${config.sslMode}`,
+            'backups-manager-tools',
+            'pg_dump',
+            '-h', config.host,
+            '-p', String(config.port),
+            '-U', config.username,
+            '-d', config.database,
+            '-F', 'c',
+            '-f', `/backup/${config.filename}`,
+        ];
 
-        const command = `
-      docker exec backups-manager-tools \
-      sh -c "PGPASSWORD='${config.password}' PGSSLMODE=disable pg_dump \
-      -h ${config.host} \
-      -p ${config.port} \
-      -U ${config.username} \
-      -d ${config.database} \
-      -F c \
-      -f /backup/${config.filename}"
-    `;
+        console.log("Ejecutando docker exec con args (sin exponer password)");
 
-
-        await execAsync(command);
-
+        await execFileAsync('docker', args);
 
         return {
             success: true,
             file: config.filename,
         };
-
     }
-
 }

@@ -53,6 +53,7 @@ export class BackupExecutorService {
                 database: backup.project.database,
                 username: backup.project.username,
                 password: backup.project.password,
+                sslMode: backup.project.sslMode,
                 filename,
             });
 
