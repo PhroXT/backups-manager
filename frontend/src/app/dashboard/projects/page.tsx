@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/src/lib/api";
 import Link from "next/link";
+import PageHeader from "@/src/components/ui/PageHeader";
+import DataTable from "@/src/components/ui/DataTable";
+import Button from "@/src/components/ui/Button";
+import Badge from "@/src/components/ui/Badge";
+import LoadingState from "@/src/components/ui/LoadingState";
+import ProjectModal from "@/src/app/dashboard/projects/ProjectModal";
 
 type Project = {
     id: string;
@@ -21,35 +27,7 @@ export default function ProjectsPage() {
     const [error, setError] = useState("");
     const [testing, setTesting] = useState<string | null>(null);
     const [running, setRunning] = useState<string | null>(null);
-
-    async function runBackup(id: string) {
-
-        setRunning(id);
-
-        try {
-
-            const result = await apiFetch(
-                `/backups/project/${id}`,
-                {
-                    method: "POST",
-                }
-            );
-
-
-            alert("Backup started successfully");
-
-
-        } catch {
-
-            alert("Backup failed");
-
-        } finally {
-
-            setRunning(null);
-
-        }
-
-    }
+    const [open, setOpen] = useState(false);
 
     useEffect(() => {
         apiFetch<Project[]>("/projects")
@@ -58,207 +36,90 @@ export default function ProjectsPage() {
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) {
-        return <p className="text-gray-600">Loading projects...</p>;
-    }
-
-    if (error) {
-        return <p className="text-red-600">{error}</p>;
-    }
-
     async function testConnection(id: string) {
-
         setTesting(id);
 
         try {
+            const result = await apiFetch(`/projects/${id}/test-connection`, { method: "POST" });
 
-            const result = await apiFetch<Project[]>(
-                `/projects/${id}/test-connection`,
-                {
-                    method: "POST",
-                }
-            );
-
-
-            if (result) {
-                alert("Connection successful");
-            } else {
-                alert(result);
-            }
-
-
+            if (result) alert("Connection successful");
+            else alert(result);
         } catch {
-
             alert("Connection failed");
-
         } finally {
-
             setTesting(null);
-
         }
-
     }
 
-    return (
-        <div>
+    async function runBackup(id: string) {
+        setRunning(id);
 
-            <div className="flex justify-between items-center mb-6">
+        try {
+            await apiFetch(`/backups/project/${id}`, { method: "POST" });
+            alert("Backup started successfully");
+        } catch {
+            alert("Backup failed");
+        } finally {
+            setRunning(null);
+        }
+    }
 
-                <div>
-                    <h2 className="text-3xl font-bold text-gray-900">
-                        Projects
-                    </h2>
+    if (loading) return <LoadingState message="Loading projects..." />;
+    if (error) return <p className="text-red-600">{error}</p>;
 
-                    <p className="text-gray-600 mt-1">
-                        Database connections configured for backups.
-                    </p>
+    const columns = [
+        { key: "name" as keyof Project, label: "Name" },
+        { key: "type" as keyof Project, label: "Type" },
+        {
+            label: "Host",
+            render: (project: Project) => <>{project.host}:{project.port}</>
+        },
+        { key: "database" as keyof Project, label: "Database" },
+        {
+            label: "Status",
+            render: (project: Project) =>
+                <Badge variant={project.enabled ? "success" : "neutral"}>
+                    {project.enabled ? "Active" : "Disabled"}
+                </Badge>
+        },
+        {
+            label: "Actions",
+            render: (project: Project) =>
+                <div className="flex gap-2">
+                    <Button
+                        variant="secondary"
+                        disabled={testing === project.id}
+                        onClick={() => testConnection(project.id)}
+                    >
+                        {testing === project.id ? "Testing..." : "Test Connection"}
+                    </Button>
+
+                    <Button
+                        variant="secondary"
+                        disabled={running === project.id}
+                        onClick={() => runBackup(project.id)}
+                    >
+                        {running === project.id ? "Running..." : "Run Backup"}
+                    </Button>
                 </div>
+        }
+    ];
 
+    return <div>
+        <div className="flex justify-between items-center mb-6">
+            <PageHeader
+                title="Projects"
+                description="Database connections configured for backups."
+            />
 
-                <Link
-                    href="/dashboard/projects/new"
-                    className="
-    bg-gray-900
-    text-white
-    px-4
-    py-2
-    rounded
-    hover:bg-gray-700
-  "
-                >
-                    New Project
-                </Link>
-
-            </div>
-
-
-            <div className="bg-white rounded shadow overflow-x-auto">
-
-                <table className="w-full">
-
-                    <thead className="bg-gray-100">
-                        <tr>
-                            <th className="p-3 text-left text-gray-700">
-                                Name
-                            </th>
-
-                            <th className="p-3 text-left text-gray-700">
-                                Type
-                            </th>
-
-                            <th className="p-3 text-left text-gray-700">
-                                Host
-                            </th>
-
-                            <th className="p-3 text-left text-gray-700">
-                                Database
-                            </th>
-
-                            <th className="p-3 text-left text-gray-700">
-                                Status
-                            </th>
-                            <th className="p-3 text-left text-gray-700">
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
-
-
-                    <tbody>
-
-                        {projects.map((project) => (
-
-                            <tr
-                                key={project.id}
-                                className="border-t border-gray-200"
-                            >
-
-                                <td className="p-3 text-gray-900">
-                                    {project.name}
-                                </td>
-
-                                <td className="p-3 text-gray-700">
-                                    {project.type}
-                                </td>
-
-                                <td className="p-3 text-gray-700">
-                                    {project.host}:{project.port}
-                                </td>
-
-                                <td className="p-3 text-gray-700">
-                                    {project.database}
-                                </td>
-
-                                <td className="p-3">
-
-                                    <span
-                                        className={`
-                      px-2 py-1 rounded text-sm
-                      ${project.enabled
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-gray-200 text-gray-700"
-                                            }
-                    `}
-                                    >
-                                        {project.enabled ? "Active" : "Disabled"}
-                                    </span>
-
-                                </td>
-                                <td className="p-3">
-
-                                    <button
-                                        onClick={() => testConnection(project.id)}
-                                        disabled={testing === project.id}
-                                        className="
-      border
-      border-gray-300
-      px-3
-      py-1
-      rounded
-      text-sm
-      hover:bg-gray-100
-      disabled:opacity-50
-    "
-                                    >
-                                        {
-                                            testing === project.id
-                                                ? "Testing..."
-                                                : "Test Connection"
-                                        }
-
-                                    </button>
-                                    <button
-                                        onClick={() => runBackup(project.id)}
-                                        disabled={running === project.id}
-                                        className="
-        border
-        border-gray-300
-        px-3
-        py-1
-        rounded
-        text-sm
-        hover:bg-gray-100
-        disabled:opacity-50
-    "
-                                    >
-                                        {
-                                            running === project.id
-                                                ? "Running..."
-                                                : "Run Backup"
-                                        }
-
-                                    </button>
-                                </td>
-                            </tr>
-
-                        ))}
-
-                    </tbody>
-
-                </table>
-
-            </div>
+            <Button variant="secondary" onClick={() => setOpen(true)}>
+                New Project
+            </Button>
 
         </div>
-    );
+
+        <DataTable columns={columns} data={projects} />
+
+        <ProjectModal open={open} onClose={() => setOpen(false)} />
+    </div>;
 }

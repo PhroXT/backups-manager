@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeButton from "../ui/theme-button";
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -31,8 +32,7 @@ export default function Sidebar() {
             <h1 className="text-xl font-bold mb-8">
                 Backup Manager
             </h1>
-
-            <nav className="flex flex-col gap-2">
+            <nav className="flex flex-col gap-2 flex-1">
 
                 {links.map((link) => (
                     <Link
@@ -48,7 +48,9 @@ export default function Sidebar() {
                 ))}
 
             </nav>
-
+            <footer>
+                <ThemeButton />
+            </footer>
         </aside>
     );
 }

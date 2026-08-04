@@ -1,49 +1,25 @@
+import Card from "@/src/components/ui/Card";
+import PageHeader from "@/src/components/ui/PageHeader";
+
 export default function DashboardPage() {
-    return (
-        <div>
+    return <div>
+        <PageHeader title="Dashboard" description="Backup management system" />
 
-            <h2 className="text-3xl font-bold">
-                Dashboard
-            </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+                <h3 className="text-muted">Projects</h3>
+                <p className="text-3xl font-bold">0</p>
+            </Card>
 
-            <p className="mt-2 text-gray-600">
-                Backup management system
-            </p>
+            <Card>
+                <h3 className="text-muted">Backups</h3>
+                <p className="text-3xl font-bold">0</p>
+            </Card>
 
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-
-                <div className="bg-white p-5 rounded shadow">
-                    <h3 className="text-gray-500">
-                        Projects
-                    </h3>
-                    <p className="text-3xl font-bold">
-                        0
-                    </p>
-                </div>
-
-
-                <div className="bg-white p-5 rounded shadow">
-                    <h3 className="text-gray-500">
-                        Backups
-                    </h3>
-                    <p className="text-3xl font-bold">
-                        0
-                    </p>
-                </div>
-
-
-                <div className="bg-white p-5 rounded shadow">
-                    <h3 className="text-gray-500">
-                        Storage
-                    </h3>
-                    <p className="text-3xl font-bold">
-                        0 GB
-                    </p>
-                </div>
-
-            </div>
-
+            <Card>
+                <h3 className="text-muted">Storage</h3>
+                <p className="text-3xl font-bold">0 GB</p>
+            </Card>
         </div>
-    );
+    </div>;
 }

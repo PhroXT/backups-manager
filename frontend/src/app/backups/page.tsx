@@ -2,6 +2,7 @@
 
 import { useBackups } from '@/src/hooks/useBackups';
 import StatusBadge from "@/src/components/StatusBadge";
+import Card from "@/src/components/ui/Card";
 
 export default function BackupsPage() {
 
