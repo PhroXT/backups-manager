@@ -2,14 +2,34 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ConnectionService } from '../database/connection/connection.service';
+import { PaginationQueryDto } from "../common/dto/pagination-query.dto";
+import { PaginationService } from '../common/pagination/pagination.service';
 
 @Injectable()
 export class ProjectsService {
-    constructor(private prisma: PrismaService,
-        private connectionService: ConnectionService) { }
+    constructor(
+        private prisma: PrismaService,
+        private connectionService: ConnectionService,
+        private paginationService: PaginationService,
+    ) { }
 
-    findAll() {
-        return this.prisma.project.findMany();
+    async findAll(query: PaginationQueryDto) {
+
+        return this.paginationService.paginate(
+            this.prisma.project,
+            query,
+            {
+                searchableFields: [
+                    "name",
+                    "host",
+                    "database",
+                ],
+                sortableFields: [
+                    "name",
+                    "createdAt",
+                ],
+            }
+        );
     }
 
     create(data: CreateProjectDto) {

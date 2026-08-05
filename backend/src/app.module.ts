@@ -8,6 +8,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { SchedulesModule } from './schedules/schedules.module';
+import { CommonModule } from "./common/common.module";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SchedulesModule } from './schedules/schedules.module';
     StorageModule,
     SchedulerModule,
     SchedulesModule,
+    CommonModule,
   ]
 })
 export class AppModule { }

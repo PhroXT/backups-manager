@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/src/lib/api";
-import Link from "next/link";
 import PageHeader from "@/src/components/ui/PageHeader";
 import DataTable from "@/src/components/ui/DataTable";
 import Button from "@/src/components/ui/Button";
 import Badge from "@/src/components/ui/Badge";
 import LoadingState from "@/src/components/ui/LoadingState";
 import ProjectModal from "@/src/app/dashboard/projects/components/NewProjectModal";
+import { Paginated } from "@/src/types/pagination";
 
 type Project = {
     id: string;
@@ -30,8 +30,8 @@ export default function ProjectsPage() {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
-        apiFetch<Project[]>("/projects")
-            .then(setProjects)
+        apiFetch<Paginated<Project>>("/projects?page=1&limit=10")
+            .then(result => setProjects(result.items))
             .catch(() => setError("Could not load projects"))
             .finally(() => setLoading(false));
     }, []);

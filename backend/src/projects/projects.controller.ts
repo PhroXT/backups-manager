@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import { PaginationQueryDto } from "../common/dto/pagination-query.dto";
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 
@@ -7,8 +8,8 @@ export class ProjectsController {
     constructor(private readonly projectsService: ProjectsService) { }
 
     @Get()
-    findAll() {
-        return this.projectsService.findAll();
+    findAll(@Query() query: PaginationQueryDto) {
+        return this.projectsService.findAll(query);
     }
 
     @Post()
