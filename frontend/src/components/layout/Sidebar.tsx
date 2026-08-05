@@ -27,7 +27,7 @@ export default function Sidebar() {
     ];
 
     return (
-        <aside className="hidden md:flex w-64 flex-col bg-gray-900 text-white min-h-screen p-5">
+        <aside className="hidden md:flex w-64 flex-col bg-gray-950 text-white min-h-screen p-5">
 
             <h1 className="text-xl font-bold mb-8">
                 Backup Manager

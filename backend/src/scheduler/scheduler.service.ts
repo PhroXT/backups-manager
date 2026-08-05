@@ -14,7 +14,7 @@ export class SchedulerService {
         private readonly backupsService: BackupsService,
     ) { }
 
-    @Cron('*/30 * * * *')
+    @Cron('* 5 * * *')
     async handleCron() {
 
         const schedules =

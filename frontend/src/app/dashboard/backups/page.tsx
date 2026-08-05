@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/src/lib/api";
 import { formatBytes, formatDate } from "@/src/lib/format"
+import DataTable from "@/src/components/ui/DataTable";
+import PageHeader from "@/src/components/ui/PageHeader";
 
 type Backup = {
     id: string;
@@ -30,6 +32,28 @@ export default function BackupsPage() {
 
     }, []);
 
+    const columns = [
+        {
+            label: "Project",
+            render: (backup: Backup) => backup.project.name,
+        },
+        {
+            label: "File",
+            render: (backup: Backup) => backup.filename,
+        },
+        {
+            label: "Size",
+            render: (backup: Backup) => formatBytes(backup.size),
+        },
+        {
+            label: "Status",
+            render: (backup: Backup) => backup.status,
+        },
+        {
+            label: "Date",
+            render: (backup: Backup) => formatDate(backup.createdAt),
+        },
+    ];
 
     if (loading) {
         return <p className="text-gray-600">
@@ -41,88 +65,12 @@ export default function BackupsPage() {
     return (
         <div>
 
-            <h2 className="text-3xl font-bold text-gray-900">
-                Backups
-            </h2>
+            <PageHeader
+                title="Backups"
+                description="Backups list"
+            />
 
-
-            <p className="text-gray-600 mt-1">
-                Backup history.
-            </p>
-
-
-            <div className="bg-white rounded shadow mt-6 overflow-x-auto">
-
-                <table className="w-full">
-
-                    <thead className="bg-gray-100">
-
-                        <tr>
-
-                            <th className="p-3 text-left text-gray-700">
-                                Project
-                            </th>
-
-                            <th className="p-3 text-left text-gray-700">
-                                File
-                            </th>
-
-                            <th className="p-3 text-left text-gray-700">
-                                Size
-                            </th>
-
-                            <th className="p-3 text-left text-gray-700">
-                                Status
-                            </th>
-
-                            <th className="p-3 text-left text-gray-700">
-                                Date
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody>
-
-                        {backups.map((backup) => (
-
-                            <tr
-                                key={backup.id}
-                                className="border-t"
-                            >
-
-                                <td className="p-3 text-gray-900">
-                                    {backup.project.name}
-                                </td>
-
-
-                                <td className="p-3 text-gray-700">
-                                    {backup.filename}
-                                </td>
-
-                                <td className="p-3 text-gray-700">
-                                    {formatBytes(backup.size)}
-                                </td>
-
-                                <td className="p-3 text-gray-700">
-                                    {backup.status}
-                                </td>
-
-                                <td className="p-3 text-gray-700">
-                                    {formatDate(backup.createdAt)}
-                                </td>
-
-                            </tr>
-
-                        ))}
-
-                    </tbody>
-
-                </table>
-
-            </div>
+            <DataTable columns={columns} data={backups} />
 
         </div>
     );

@@ -8,7 +8,7 @@ import DataTable from "@/src/components/ui/DataTable";
 import Button from "@/src/components/ui/Button";
 import Badge from "@/src/components/ui/Badge";
 import LoadingState from "@/src/components/ui/LoadingState";
-import ProjectModal from "@/src/app/dashboard/projects/ProjectModal";
+import ProjectModal from "@/src/app/dashboard/projects/components/NewProjectModal";
 
 type Project = {
     id: string;
