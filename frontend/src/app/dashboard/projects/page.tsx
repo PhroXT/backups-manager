@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { apiFetch } from "@/src/lib/api";
+import { useProjects } from "@/src/hooks/useProjects";
 import PageHeader from "@/src/components/ui/PageHeader";
 import DataTable from "@/src/components/ui/DataTable";
 import Button from "@/src/components/ui/Button";
 import Badge from "@/src/components/ui/Badge";
 import LoadingState from "@/src/components/ui/LoadingState";
 import ProjectModal from "@/src/app/dashboard/projects/components/NewProjectModal";
-import { Paginated } from "@/src/types/pagination";
+import { useState } from "react";
+import { apiFetch } from "@/src/lib/api";
 
 type Project = {
     id: string;
@@ -22,19 +22,20 @@ type Project = {
 };
 
 export default function ProjectsPage() {
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const {
+        projects,
+        search,
+        setSearch,
+        page,
+        setPage,
+        totalPages,
+        sort,
+        order,
+        changeSort,
+    } = useProjects();
     const [testing, setTesting] = useState<string | null>(null);
     const [running, setRunning] = useState<string | null>(null);
     const [open, setOpen] = useState(false);
-
-    useEffect(() => {
-        apiFetch<Paginated<Project>>("/projects?page=1&limit=10")
-            .then(result => setProjects(result.items))
-            .catch(() => setError("Could not load projects"))
-            .finally(() => setLoading(false));
-    }, []);
 
     async function testConnection(id: string) {
         setTesting(id);
@@ -63,9 +64,6 @@ export default function ProjectsPage() {
             setRunning(null);
         }
     }
-
-    if (loading) return <LoadingState message="Loading projects..." />;
-    if (error) return <p className="text-red-600">{error}</p>;
 
     const columns = [
         { key: "name" as keyof Project, label: "Name" },
@@ -118,7 +116,27 @@ export default function ProjectsPage() {
 
         </div>
 
-        <DataTable columns={columns} data={projects} />
+        <DataTable
+            columns={columns}
+            data={projects}
+            search={{
+                value: search,
+                onChange: (value) => {
+                    setPage(1);
+                    setSearch(value);
+                }
+            }}
+            pagination={{
+                page,
+                totalPages,
+                onPageChange: setPage,
+            }}
+            sort={{
+                field: sort,
+                order,
+                onChange: changeSort,
+            }}
+        />
 
         <ProjectModal open={open} onClose={() => setOpen(false)} />
     </div>;
