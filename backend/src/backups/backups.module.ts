@@ -7,6 +7,7 @@ import { StorageModule } from '../storage/storage.module';
 import { BackupRunnerService } from './backup-runner.service';
 import { BullModule } from '@nestjs/bullmq';
 import { BackupProcessor } from './backup.processor';
+import { PaginationModule } from '../common/pagination/pagination.module';
 
 @Module({
     imports: [
@@ -15,6 +16,7 @@ import { BackupProcessor } from './backup.processor';
         BullModule.registerQueue({
             name: 'backups',
         }),
+        PaginationModule,
     ],
     controllers: [
         BackupsController,

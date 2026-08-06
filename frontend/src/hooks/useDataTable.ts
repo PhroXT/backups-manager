@@ -31,7 +31,6 @@ export function useDataTable<T>({
 
     const debouncedSearch = useDebounce(search);
 
-
     async function load() {
         try {
             setLoading(true);
@@ -54,7 +53,6 @@ export function useDataTable<T>({
         }
     }
 
-
     function changeSort(field: string) {
 
         if (sort === field) {
@@ -67,18 +65,15 @@ export function useDataTable<T>({
         setPage(1);
     }
 
-
     function changePageSize(value: number) {
         setPage(1);
         setLimit(value);
     }
 
-
     function changeSearch(value: string) {
         setPage(1);
         setSearch(value);
     }
-
 
     useEffect(() => {
         load();
@@ -89,7 +84,6 @@ export function useDataTable<T>({
         sort,
         order,
     ]);
-
 
     return {
 
@@ -112,7 +106,6 @@ export function useDataTable<T>({
         changeSort,
 
         reload: load,
-
 
         // Helpers para DataTable
         searchProps: {

@@ -1,17 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
-import { PaginationDto } from '../dto/pagination.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import { paginate } from '../common/utils/paginate';
+import { PaginationService } from '../common/pagination/pagination.service';
 
 @Injectable()
 export class BackupsService {
 
     constructor(
         private prisma: PrismaService,
-
+        private paginationService: PaginationService,
         @InjectQueue('backups')
         private backupsQueue: Queue,
     ) { }
@@ -47,65 +48,34 @@ export class BackupsService {
 
     }
 
-    async findAll(params: PaginationDto) {
+    async findAll(query: PaginationDto) {
 
-        const {
-            search,
-            sort,
-            order,
-        } = params;
-
-
-        const where: Prisma.BackupWhereInput = search
-            ? {
-                OR: [
-                    {
-                        filename: {
-                            contains: search,
-                            mode: "insensitive",
-                        },
-                    },
-                    {
-                        project: {
-                            name: {
-                                contains: search,
-                                mode: "insensitive",
-                            },
-                        },
-                    },
-                ],
-            }
-            : {};
-
-
-        const allowedSorts = [
-            "filename",
-            "size",
-            "status",
-            "createdAt",
-        ];
-
-
-        const orderBy = sort && allowedSorts.includes(sort)
-            ? {
-                [sort]: order ?? "asc",
-            }
-            : {
-                createdAt: "desc",
-            };
-
-
-        return paginate(
+        return this.paginationService.paginate(
             this.prisma.backup,
-            params,
+            query,
             {
-                where,
+                searchableFields: [
+                    "filename",
+                    "status",
+                    "project.name",
+                ],
 
+                sortableFields: [
+                    "filename",
+                    "size",
+                    "status",
+                    "createdAt",
+                ],
+            },
+            {
                 include: {
-                    project: true,
+                    project: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
                 },
-
-                orderBy,
             },
         );
     }

@@ -7,7 +7,7 @@ import {
 
 import { BackupsService } from './backups.service';
 import { BackupExecutorService } from './backup-executor.service';
-import { PaginationDto } from '../dto/pagination.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { Query } from '@nestjs/common';
 
 @Controller('backups')
