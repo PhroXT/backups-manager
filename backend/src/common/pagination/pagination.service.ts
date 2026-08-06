@@ -1,15 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { buildPaginatedResponse } from "../utils/paginated-response";
 import { getPagination } from "./pagination.utils";
-import { PaginationQueryDto } from "../dto/pagination-query.dto";
 import { PaginationConfig } from "./pagination.types";
+import { PaginationDto } from "../dto/pagination.dto";
 
 @Injectable()
 export class PaginationService {
 
     async paginate<T>(
         model: any,
-        query: PaginationQueryDto,
+        query: PaginationDto,
         config: PaginationConfig,
         args: any = {},
     ) {

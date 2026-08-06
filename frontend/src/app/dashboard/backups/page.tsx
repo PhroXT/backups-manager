@@ -1,36 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { apiFetch } from "@/src/lib/api";
 import { formatBytes, formatDate } from "@/src/lib/format"
 import DataTable from "@/src/components/ui/DataTable";
 import PageHeader from "@/src/components/ui/PageHeader";
-
-type Backup = {
-    id: string;
-    filename: string;
-    size: string;
-    status: string;
-    createdAt: string;
-    project: {
-        name: string;
-    };
-};
-
+import { useDataTable } from "@/src/hooks/useDataTable";
+import { backupsService } from "@/src/services/backups.service";
+import { Backup } from "@/src/types/backup";
 
 export default function BackupsPage() {
 
-    const [backups, setBackups] = useState<Backup[]>([]);
-    const [loading, setLoading] = useState(true);
-
-
-    useEffect(() => {
-
-        apiFetch<Backup[]>("/backups")
-            .then(setBackups)
-            .finally(() => setLoading(false));
-
-    }, []);
+    const table = useDataTable({
+        service: backupsService,
+        defaultSort: "createdAt",
+    });
 
     const columns = [
         {
@@ -55,13 +37,6 @@ export default function BackupsPage() {
         },
     ];
 
-    if (loading) {
-        return <p className="text-gray-600">
-            Loading backups...
-        </p>;
-    }
-
-
     return (
         <div>
 
@@ -70,8 +45,14 @@ export default function BackupsPage() {
                 description="Backups list"
             />
 
-            <DataTable columns={columns} data={backups} />
-
+            <DataTable
+                columns={columns}
+                data={table.data}
+                search={table.searchProps}
+                pageSize={table.pageSizeProps}
+                pagination={table.paginationProps}
+                sort={table.sortProps}
+            />
         </div>
     );
 }

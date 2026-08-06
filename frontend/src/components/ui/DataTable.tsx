@@ -19,26 +19,49 @@ type Sort = {
     onChange: (field: string) => void;
 };
 
+type PageSize = {
+    value: number;
+    options: number[];
+    onChange: (value: number) => void;
+};
+
 type Props<T> = {
     columns: Column<T>[];
     data: T[];
     pagination?: Pagination;
     search?: Search;
     sort?: Sort;
-    loading?:boolean;
+    loading?: boolean;
+    pageSize?: PageSize;
 };
 
-export default function DataTable<T>({ columns, data, pagination, search, sort }: Props<T>) {
+
+export default function DataTable<T>({ columns, data, pagination, search, sort, pageSize }: Props<T>) {
+    const rows = data ?? [];
     return <div className="space-y-2">
 
-        {search && <input
-            value={search.value}
-            onChange={(e) => search.onChange(e.target.value)}
-            placeholder="Search..."
-            className="border border-border rounded px-3 py-2 w-full md:w-80"
-        />}
+        <div className="flex justify-between items-center">
+            {search && <input
+                value={search.value}
+                onChange={(e) => search.onChange(e.target.value)}
+                placeholder="Search..."
+                className="border border-border rounded px-3 py-2 w-full md:w-80"
+            />}
 
-        {!data.length && !search?.value
+            {pageSize && <select
+                value={pageSize.value}
+                onChange={(e) => pageSize.onChange(Number(e.target.value))}
+                className="border border-border bg-card text-foreground rounded px-3 py-2"
+            >
+                {pageSize.options.map(size =>
+                    <option key={size} value={size}>
+                        {size} rows
+                    </option>
+                )}
+            </select>}
+        </div>
+
+        {!rows.length && !search?.value
             ? <EmptyState message="No records found" />
             :
             <div className="overflow-x-auto rounded-lg border border-border bg-card">
@@ -58,7 +81,7 @@ export default function DataTable<T>({ columns, data, pagination, search, sort }
                     </thead>
 
                     <tbody>
-                        {data.map((row, index) =>
+                        {rows.map((row, index) =>
                             <tr key={index} className="border-t border-border hover:bg-foreground/5">
                                 {columns.map((column, i) =>
                                     <td key={i} className="p-3 text-sm">

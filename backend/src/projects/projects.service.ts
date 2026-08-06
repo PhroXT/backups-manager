@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ConnectionService } from '../database/connection/connection.service';
-import { PaginationQueryDto } from "../common/dto/pagination-query.dto";
+import { PaginationDto } from "../common/dto/pagination.dto";
 import { PaginationService } from '../common/pagination/pagination.service';
 
 @Injectable()
@@ -13,7 +13,7 @@ export class ProjectsService {
         private paginationService: PaginationService,
     ) { }
 
-    async findAll(query: PaginationQueryDto) {
+    async findAll(query: PaginationDto) {
 
         return this.paginationService.paginate(
             this.prisma.project,

@@ -1,14 +1,13 @@
 "use client";
 
-import { useProjects } from "@/src/hooks/useProjects";
+import { useDataTable } from "@/src/hooks/useDataTable";
+import { projectsService } from "@/src/services/projects.service";
 import PageHeader from "@/src/components/ui/PageHeader";
 import DataTable from "@/src/components/ui/DataTable";
 import Button from "@/src/components/ui/Button";
 import Badge from "@/src/components/ui/Badge";
-import LoadingState from "@/src/components/ui/LoadingState";
 import ProjectModal from "@/src/app/dashboard/projects/components/NewProjectModal";
 import { useState } from "react";
-import { apiFetch } from "@/src/lib/api";
 
 type Project = {
     id: string;
@@ -22,44 +21,44 @@ type Project = {
 };
 
 export default function ProjectsPage() {
-    const {
-        projects,
-        search,
-        setSearch,
-        page,
-        setPage,
-        totalPages,
-        sort,
-        order,
-        changeSort,
-    } = useProjects();
+    const table = useDataTable({
+        service: projectsService,
+        defaultSort: "name",
+    });
     const [testing, setTesting] = useState<string | null>(null);
     const [running, setRunning] = useState<string | null>(null);
     const [open, setOpen] = useState(false);
 
     async function testConnection(id: string) {
+
         setTesting(id);
 
         try {
-            const result = await apiFetch(`/projects/${id}/test-connection`, { method: "POST" });
 
-            if (result) alert("Connection successful");
-            else alert(result);
-        } catch {
-            alert("Connection failed");
+            const result =
+                await projectsService.testConnection(id);
+
+            alert(
+                result
+                    ? "Connection successful"
+                    : "Connection failed"
+            );
+
         } finally {
             setTesting(null);
         }
     }
 
     async function runBackup(id: string) {
+
         setRunning(id);
 
         try {
-            await apiFetch(`/backups/project/${id}`, { method: "POST" });
+
+            await projectsService.runBackup(id);
+
             alert("Backup started successfully");
-        } catch {
-            alert("Backup failed");
+
         } finally {
             setRunning(null);
         }
@@ -118,24 +117,11 @@ export default function ProjectsPage() {
 
         <DataTable
             columns={columns}
-            data={projects}
-            search={{
-                value: search,
-                onChange: (value) => {
-                    setPage(1);
-                    setSearch(value);
-                }
-            }}
-            pagination={{
-                page,
-                totalPages,
-                onPageChange: setPage,
-            }}
-            sort={{
-                field: sort,
-                order,
-                onChange: changeSort,
-            }}
+            data={table.data}
+            search={table.searchProps}
+            pageSize={table.pageSizeProps}
+            pagination={table.paginationProps}
+            sort={table.sortProps}
         />
 
         <ProjectModal open={open} onClose={() => setOpen(false)} />

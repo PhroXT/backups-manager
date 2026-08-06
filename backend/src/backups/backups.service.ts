@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
+import { PaginationDto } from '../dto/pagination.dto';
 import { Queue } from 'bullmq';
+import { Prisma } from '@prisma/client';
+import { paginate } from '../common/utils/paginate';
 
 @Injectable()
 export class BackupsService {
@@ -21,8 +24,6 @@ export class BackupsService {
                 status: 'pending',
             },
         });
-
-        console.log('Creating backup for project: ', projectId);
 
         await this.backupsQueue.add(
             'backup',
@@ -46,28 +47,67 @@ export class BackupsService {
 
     }
 
-    async findAll() {
+    async findAll(params: PaginationDto) {
 
-        const backups = await this.prisma.backup.findMany({
-            include: {
-                project: {
-                    select: {
-                        id: true,
-                        name: true,
+        const {
+            search,
+            sort,
+            order,
+        } = params;
+
+
+        const where: Prisma.BackupWhereInput = search
+            ? {
+                OR: [
+                    {
+                        filename: {
+                            contains: search,
+                            mode: "insensitive",
+                        },
                     },
+                    {
+                        project: {
+                            name: {
+                                contains: search,
+                                mode: "insensitive",
+                            },
+                        },
+                    },
+                ],
+            }
+            : {};
+
+
+        const allowedSorts = [
+            "filename",
+            "size",
+            "status",
+            "createdAt",
+        ];
+
+
+        const orderBy = sort && allowedSorts.includes(sort)
+            ? {
+                [sort]: order ?? "asc",
+            }
+            : {
+                createdAt: "desc",
+            };
+
+
+        return paginate(
+            this.prisma.backup,
+            params,
+            {
+                where,
+
+                include: {
+                    project: true,
                 },
+
+                orderBy,
             },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
-
-
-        return backups.map((backup) => ({
-            ...backup,
-            size: backup.size?.toString() ?? null,
-        }));
-
+        );
     }
 
     async findOne(id: string) {
@@ -86,16 +126,11 @@ export class BackupsService {
             },
         });
 
-
         if (!backup) {
             return null;
         }
 
-
-        return {
-            ...backup,
-            size: backup.size?.toString() ?? null,
-        };
+        return backup;
 
     }
 

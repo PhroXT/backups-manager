@@ -14,13 +14,14 @@ export function useProjects() {
     const [sort, setSort] = useState("name");
     const [order, setOrder] = useState<"asc" | "desc">("asc");
     const debouncedSearch = useDebounce(search);
+    const [limit, setLimit] = useState(10);
 
     async function load() {
         setLoading(true);
 
         const response = await projectsService.getAll({
             page,
-            limit: 10,
+            limit: limit,
             search: debouncedSearch,
             sort,
             order,
@@ -46,13 +47,15 @@ export function useProjects() {
 
     useEffect(() => {
         load();
-    }, [page, debouncedSearch, sort, order]);
+    }, [page, limit, debouncedSearch, sort, order]);
 
     return {
         projects,
         loading,
         page,
         setPage,
+        limit,
+        setLimit,
         search,
         setSearch,
         totalPages,

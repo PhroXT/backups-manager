@@ -7,7 +7,8 @@ import {
 
 import { BackupsService } from './backups.service';
 import { BackupExecutorService } from './backup-executor.service';
-
+import { PaginationDto } from '../dto/pagination.dto';
+import { Query } from '@nestjs/common';
 
 @Controller('backups')
 export class BackupsController {
@@ -31,17 +32,16 @@ export class BackupsController {
             backup.id
         );
 
-
         return backup;
 
     }
 
-
     @Get()
-    findAll() {
-        return this.backupsService.findAll();
+    findAll(
+        @Query() query: PaginationDto,
+    ) {
+        return this.backupsService.findAll(query);
     }
-
 
     @Get(':id')
     findOne(
