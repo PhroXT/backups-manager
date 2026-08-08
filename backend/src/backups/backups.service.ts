@@ -3,8 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { Queue } from 'bullmq';
-import { Prisma } from '@prisma/client';
-import { paginate } from '../common/utils/paginate';
 import { PaginationService } from '../common/pagination/pagination.service';
 
 @Injectable()

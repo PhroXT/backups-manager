@@ -16,23 +16,27 @@ export default function BackupsPage() {
 
     const columns = [
         {
-            label: "Project",
+            label: "Project", key: "name" as keyof Backup,
             render: (backup: Backup) => backup.project.name,
         },
         {
             label: "File",
+            key: "filename" as keyof Backup,
             render: (backup: Backup) => backup.filename,
         },
         {
             label: "Size",
+            key: "size" as keyof Backup,
             render: (backup: Backup) => formatBytes(backup.size),
         },
         {
             label: "Status",
+            key: "status" as keyof Backup,
             render: (backup: Backup) => backup.status,
         },
         {
             label: "Date",
+            key: "createdAt" as keyof Backup,
             render: (backup: Backup) => formatDate(backup.createdAt),
         },
     ];
@@ -42,7 +46,7 @@ export default function BackupsPage() {
 
             <PageHeader
                 title="Backups"
-                description="Backups list"
+                description=""
             />
 
             <DataTable
