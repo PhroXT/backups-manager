@@ -15,25 +15,13 @@ export class BackupsController {
 
     constructor(
         private readonly backupsService: BackupsService,
-        private readonly executor: BackupExecutorService,
     ) { }
-
 
     @Post('project/:id')
     async create(
         @Param('id') id: string,
     ) {
-
-        const backup =
-            await this.backupsService.create(id);
-
-
-        await this.executor.execute(
-            backup.id
-        );
-
-        return backup;
-
+        return this.backupsService.create(id);
     }
 
     @Get()
@@ -49,5 +37,4 @@ export class BackupsController {
     ) {
         return this.backupsService.findOne(id);
     }
-
 }

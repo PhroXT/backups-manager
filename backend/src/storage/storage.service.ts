@@ -25,7 +25,7 @@ export class StorageService implements OnModuleInit {
         await this.ensureBucket(
             this.configService.get<string>('MINIO_BUCKET')!,
         );
-        console.log('✓ MinIO connected');
+        console.log('Ready. MinIO connected');
     }
 
     async ensureBucket(bucket: string) {
@@ -43,11 +43,30 @@ export class StorageService implements OnModuleInit {
         objectName: string,
         filePath: string,
     ) {
+        const stats = await fs.promises.stat(filePath);
+
         await this.client.fPutObject(
             bucket,
             objectName,
             filePath,
         );
+
+        const object = await this.client.statObject(
+            bucket,
+            objectName,
+        );
+
+        if (object.size !== stats.size) {
+            throw new Error(
+                `Uploaded object size mismatch: expected ${stats.size} bytes, got ${object.size} bytes`,
+            );
+        }
+
+        return {
+            bucket,
+            objectName,
+            size: object.size,
+        };
     }
 
 }
