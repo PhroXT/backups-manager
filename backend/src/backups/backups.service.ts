@@ -5,6 +5,7 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 import { Queue } from 'bullmq';
 import { PaginationService } from '../common/pagination/pagination.service';
 import { Prisma } from '@prisma/client';
+import { BackupExecutorService } from './backups-executor.service';
 
 @Injectable()
 export class BackupsService {
@@ -14,6 +15,7 @@ export class BackupsService {
         private paginationService: PaginationService,
         @InjectQueue('backups')
         private backupsQueue: Queue,
+        private readonly executor: BackupExecutorService,
     ) { }
 
     async create(projectId: string) {
@@ -132,4 +134,78 @@ export class BackupsService {
 
     }
 
+    async findActive() {
+        return this.prisma.backup.findMany({
+            where: {
+                status: {
+                    in: ['pending', 'running'],
+                },
+            },
+            include: {
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'asc',
+            },
+        });
+    }
+
+    async cancel(id: string) {
+
+        const backup = await this.prisma.backup.findUnique({
+            where: {
+                id,
+            },
+        });
+
+        if (!backup) {
+            return null;
+        }
+
+        if (
+            backup.status !== 'pending' &&
+            backup.status !== 'running'
+        ) {
+            return false;
+        }
+
+        if (backup.status === 'pending') {
+
+            const job =
+                await this.backupsQueue.getJob(
+                    `backup-${backup.id}`,
+                );
+
+            if (job) {
+                await job.remove();
+            }
+
+            await this.prisma.backup.update({
+                where: {
+                    id: backup.id,
+                },
+                data: {
+                    status: 'cancelled',
+                    errorMessage: null,
+                    finishedAt: new Date(),
+                },
+            });
+
+            return true;
+        }
+
+        const cancelled =
+            this.executor.cancel(backup.id);
+
+        if (!cancelled) {
+            return false;
+        }
+
+        return true;
+    }
 }

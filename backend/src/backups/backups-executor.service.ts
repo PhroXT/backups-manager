@@ -8,11 +8,27 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class BackupExecutorService {
 
+    private readonly cancelledBackups = new Set<string>();
+
     constructor(
         private readonly storage: StorageService,
         private readonly runner: BackupRunnerService,
         private readonly prisma: PrismaService,
     ) { }
+
+    async cancel(backupId: string): Promise<boolean> {
+
+        const cancelled =
+            await this.runner.cancel(backupId);
+
+        if (!cancelled) {
+            return false;
+        }
+
+        this.cancelledBackups.add(backupId);
+
+        return true;
+    }
 
     async execute(
         backupId: string,
@@ -37,6 +53,16 @@ export class BackupExecutorService {
             return {
                 success: true,
                 filename: backup.filename,
+            };
+        }
+
+        if (
+            backup.status !== 'pending' &&
+            backup.status !== 'running'
+        ) {
+            return {
+                success: false,
+                cancelled: backup.status === 'cancelled',
             };
         }
 
@@ -65,11 +91,10 @@ export class BackupExecutorService {
 
         try {
 
-            // Elimina un archivo parcial de un intento anterior.
             await this.removeLocalFile(file);
 
-            // Genera el dump de PostgreSQL.
             await this.runner.runPgDump({
+                backupId: backup.id,
                 host: backup.project.host,
                 port: backup.project.port,
                 database: backup.project.database,
@@ -92,7 +117,6 @@ export class BackupExecutorService {
                 },
             });
 
-            // Valida que el archivo exista y tenga contenido.
             const stats = await fs.promises.stat(file);
 
             if (stats.size === 0) {
@@ -111,7 +135,6 @@ export class BackupExecutorService {
                 file,
             );
 
-            // Marca el backup como completado.
             await this.prisma.backup.update({
                 where: {
                     id: backupId,
@@ -125,7 +148,6 @@ export class BackupExecutorService {
                 },
             });
 
-            // Elimina el archivo temporal.
             await this.removeLocalFile(file);
 
             return {
@@ -134,6 +156,30 @@ export class BackupExecutorService {
             };
 
         } catch (error) {
+
+            const wasCancelled =
+                this.cancelledBackups.delete(backupId);
+
+            if (wasCancelled) {
+
+                await this.prisma.backup.update({
+                    where: {
+                        id: backupId,
+                    },
+                    data: {
+                        status: 'cancelled',
+                        errorMessage: null,
+                        finishedAt: new Date(),
+                    },
+                });
+
+                await this.removeLocalFile(file);
+
+                return {
+                    success: false,
+                    cancelled: true,
+                };
+            }
 
             const isLastAttempt =
                 attemptsMade + 1 >= maxAttempts;
@@ -171,7 +217,6 @@ export class BackupExecutorService {
                 });
             }
 
-            // Limpia el archivo temporal del intento.
             await this.removeLocalFile(file);
 
             throw error;

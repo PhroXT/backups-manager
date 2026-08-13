@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
 @Injectable()
 export class BackupRunnerService {
+
+    private readonly processes = new Map<string, ChildProcess>();
 
     async validatePgDump(filename: string): Promise<void> {
 
@@ -48,6 +50,7 @@ export class BackupRunnerService {
     }
 
     runPgDump(config: {
+        backupId: string;
         host: string;
         port: number;
         database: string;
@@ -101,6 +104,11 @@ export class BackupRunnerService {
 
             const child = spawn('docker', args);
 
+            this.processes.set(
+                config.backupId,
+                child,
+            );
+
             let stderr = '';
 
             const progressInterval = setInterval(async () => {
@@ -121,7 +129,7 @@ export class BackupRunnerService {
                     console.log('[backup progress] file not available yet');
                 }
 
-            }, 10000);
+            }, 60000);
 
             child.stderr.on('data', (data: Buffer) => {
 
@@ -137,12 +145,20 @@ export class BackupRunnerService {
 
                 clearInterval(progressInterval);
 
+                this.processes.delete(
+                    config.backupId,
+                );
+
                 reject(error);
             });
 
             child.on('close', (code) => {
 
                 clearInterval(progressInterval);
+
+                this.processes.delete(
+                    config.backupId,
+                );
 
                 if (code === 0) {
 
@@ -162,5 +178,38 @@ export class BackupRunnerService {
                 );
             });
         });
+    }
+
+    async cancel(backupId: string): Promise<boolean> {
+
+        const child = this.processes.get(backupId);
+
+        if (!child) {
+            return false;
+        }
+
+        const filename = `${backupId}.dump`;
+
+        const args = [
+            'exec',
+            'backups-manager-tools',
+            'pkill',
+            '-TERM',
+            '-f',
+            filename,
+        ];
+
+        await new Promise<void>((resolve, reject) => {
+
+            const killer = spawn('docker', args);
+
+            killer.on('error', reject);
+
+            killer.on('close', () => {
+                resolve();
+            });
+        });
+
+        return true;
     }
 }

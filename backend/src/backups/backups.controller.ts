@@ -23,11 +23,23 @@ export class BackupsController {
         return this.backupsService.create(id);
     }
 
+    @Post(':id/cancel')
+    cancel(
+        @Param('id') id: string,
+    ) {
+        return this.backupsService.cancel(id);
+    }
+
     @Get()
     findAll(
         @Query() query: PaginationDto,
     ) {
         return this.backupsService.findAll(query);
+    }
+
+    @Get('active')
+    findActive() {
+        return this.backupsService.findActive();
     }
 
     @Get(':id')
@@ -36,4 +48,5 @@ export class BackupsController {
     ) {
         return this.backupsService.findOne(id);
     }
+
 }

@@ -31,16 +31,18 @@ export class SchedulerService {
                 if (shouldRun) {
 
                     this.logger.log(
-                        `Executing schedule ${schedule.id}`
+                        `Executing schedule ${schedule.id}`,
                     );
 
-                    await this.backupsService.create(
+                    const backup = await this.backupsService.create(
                         schedule.projectId,
                     );
 
-                    await this.schedulesService.updateLastRun(
-                        schedule.id,
-                    );
+                    if (backup) {
+                        await this.schedulesService.updateLastRun(
+                            schedule.id,
+                        );
+                    }
                 }
             } catch (error) {
 

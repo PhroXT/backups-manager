@@ -1,5 +1,6 @@
 import Card from "@/src/components/ui/Card";
 import PageHeader from "@/src/components/ui/PageHeader";
+import ActiveBackups from "@/src/components/backups/ActiveBackups";
 
 export default function DashboardPage() {
     return <div>
@@ -21,5 +22,6 @@ export default function DashboardPage() {
                 <p className="text-3xl font-bold">0 GB</p>
             </Card>
         </div>
+        <ActiveBackups />
     </div>;
 }

@@ -2,7 +2,9 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { BackupExecutorService } from './backups-executor.service';
 
-@Processor('backups')
+@Processor('backups', {
+    concurrency: 8,
+})
 export class BackupProcessor extends WorkerHost {
 
     constructor(
