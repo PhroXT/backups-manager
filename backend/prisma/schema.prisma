@@ -48,6 +48,9 @@ model Backup {
   startedAt  DateTime?
   finishedAt DateTime?
 
+  lastActivityAt DateTime?
+  lastActivitySize BigInt?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

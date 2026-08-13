@@ -1,6 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { BackupExecutorService } from './backup-executor.service';
+import { BackupExecutorService } from './backups-executor.service';
 
 @Processor('backups')
 export class BackupProcessor extends WorkerHost {
@@ -15,6 +15,10 @@ export class BackupProcessor extends WorkerHost {
 
         const { backupId } = job.data;
 
-        await this.executor.execute(backupId);
+        await this.executor.execute(
+            backupId,
+            job.attemptsMade,
+            job.opts.attempts ?? 1,
+        );
     }
 }

@@ -61,9 +61,12 @@ export class SchedulerService {
         const cronTime =
             new CronTime(schedule.cron);
 
+        const reference =
+            schedule.lastRun ?? now;
+
         const next =
             cronTime.getNextDateFrom(
-                schedule.lastRun ?? new Date(0)
+                reference,
             );
 
         return next.toMillis() <= now.getTime();

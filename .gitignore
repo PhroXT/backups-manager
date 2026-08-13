@@ -67,3 +67,7 @@ docker-compose.yml
 
 # Prisma
 /backend/prisma/migrations
+
+# Security
+/backend/src/security
+/frontend/src/security

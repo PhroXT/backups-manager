@@ -121,7 +121,7 @@ export class BackupRunnerService {
                     console.log('[backup progress] file not available yet');
                 }
 
-            }, 100);
+            }, 10000);
 
             child.stderr.on('data', (data: Buffer) => {
 

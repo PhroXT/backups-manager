@@ -4,6 +4,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { Queue } from 'bullmq';
 import { PaginationService } from '../common/pagination/pagination.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class BackupsService {
@@ -16,34 +17,63 @@ export class BackupsService {
     ) { }
 
     async create(projectId: string) {
-        const backup = await this.prisma.backup.create({
-            data: {
+
+        const activeBackup = await this.prisma.backup.findFirst({
+            where: {
                 projectId,
-                filename: 'pending.dump',
-                status: 'pending',
+                status: {
+                    in: ['pending', 'running'],
+                },
             },
         });
 
-        await this.backupsQueue.add(
-            'backup',
-            {
-                backupId: backup.id,
-            },
-            {
-                attempts: 3,
+        if (activeBackup) {
+            return null;
+        }
 
-                backoff: {
-                    type: 'exponential',
-                    delay: 10000,
+        try {
+
+            const backup = await this.prisma.backup.create({
+                data: {
+                    projectId,
+                    filename: 'pending.dump',
+                    status: 'pending',
                 },
+            });
 
-                removeOnComplete: true,
-                removeOnFail: false,
-            },
-        );
+            await this.backupsQueue.add(
+                'backup',
+                {
+                    backupId: backup.id,
+                },
+                {
+                    jobId: `backup-${backup.id}`,
 
-        return backup;
+                    attempts: 3,
 
+                    backoff: {
+                        type: 'exponential',
+                        delay: 10000,
+                    },
+
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                },
+            );
+
+            return backup;
+
+        } catch (error) {
+
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2002'
+            ) {
+                return null;
+            }
+
+            throw error;
+        }
     }
 
     async findAll(query: PaginationDto) {

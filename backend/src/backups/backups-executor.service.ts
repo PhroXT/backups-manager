@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { StorageService } from '../storage/storage.service';
-import { BackupRunnerService } from './backup-runner.service';
+import { BackupRunnerService } from './backups-runner.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -14,7 +14,11 @@ export class BackupExecutorService {
         private readonly prisma: PrismaService,
     ) { }
 
-    async execute(backupId: string) {
+    async execute(
+        backupId: string,
+        attemptsMade = 0,
+        maxAttempts = 1,
+    ) {
 
         const backup = await this.prisma.backup.findUnique({
             where: {
@@ -36,10 +40,6 @@ export class BackupExecutorService {
             };
         }
 
-        if (backup.status === 'running') {
-            throw new Error('Backup is already running');
-        }
-
         await this.prisma.backup.update({
             where: {
                 id: backupId,
@@ -49,6 +49,8 @@ export class BackupExecutorService {
                 startedAt: new Date(),
                 finishedAt: null,
                 errorMessage: null,
+                lastActivityAt: new Date(),
+                lastActivitySize: 0,
             },
         });
 
@@ -63,8 +65,10 @@ export class BackupExecutorService {
 
         try {
 
-            // 1. GENERACIÓN
+            // Elimina un archivo parcial de un intento anterior.
+            await this.removeLocalFile(file);
 
+            // Genera el dump de PostgreSQL.
             await this.runner.runPgDump({
                 host: backup.project.host,
                 port: backup.project.port,
@@ -73,10 +77,22 @@ export class BackupExecutorService {
                 password: backup.project.password,
                 sslMode: backup.project.sslMode,
                 filename,
+
+                onProgress: async ({ bytes }) => {
+
+                    await this.prisma.backup.update({
+                        where: {
+                            id: backupId,
+                        },
+                        data: {
+                            lastActivityAt: new Date(),
+                            lastActivitySize: bytes,
+                        },
+                    });
+                },
             });
 
-            // 2. VALIDACIÓN DEL ARCHIVO
-
+            // Valida que el archivo exista y tenga contenido.
             const stats = await fs.promises.stat(file);
 
             if (stats.size === 0) {
@@ -85,19 +101,17 @@ export class BackupExecutorService {
                 );
             }
 
+            // Valida la estructura del dump.
             await this.runner.validatePgDump(filename);
 
-            // 3. UPLOAD
-
+            // Sube el backup al almacenamiento.
             await this.storage.uploadFile(
                 'backups',
                 filename,
                 file,
             );
 
-
-            // 4. COMPLETADO
-
+            // Marca el backup como completado.
             await this.prisma.backup.update({
                 where: {
                     id: backupId,
@@ -107,13 +121,12 @@ export class BackupExecutorService {
                     size: stats.size,
                     status: 'completed',
                     finishedAt: new Date(),
+                    errorMessage: null,
                 },
             });
 
-            // 5. CLEANUP
-
+            // Elimina el archivo temporal.
             await this.removeLocalFile(file);
-
 
             return {
                 success: true,
@@ -122,27 +135,48 @@ export class BackupExecutorService {
 
         } catch (error) {
 
-            await this.prisma.backup.update({
-                where: {
-                    id: backupId,
-                },
-                data: {
-                    status: 'failed',
-                    errorMessage:
-                        error instanceof Error
-                            ? error.message
-                            : 'Unknown error',
-                    finishedAt: new Date(),
-                },
-            });
+            const isLastAttempt =
+                attemptsMade + 1 >= maxAttempts;
 
-            // Si algo falla, limpiar el archivo temporal.
+            if (isLastAttempt) {
+
+                await this.prisma.backup.update({
+                    where: {
+                        id: backupId,
+                    },
+                    data: {
+                        status: 'failed',
+                        errorMessage:
+                            error instanceof Error
+                                ? error.message
+                                : 'Unknown error',
+                        finishedAt: new Date(),
+                    },
+                });
+
+            } else {
+
+                await this.prisma.backup.update({
+                    where: {
+                        id: backupId,
+                    },
+                    data: {
+                        status: 'pending',
+                        errorMessage:
+                            error instanceof Error
+                                ? error.message
+                                : 'Unknown error',
+                        finishedAt: null,
+                    },
+                });
+            }
+
+            // Limpia el archivo temporal del intento.
             await this.removeLocalFile(file);
 
             throw error;
         }
     }
-
     private async removeLocalFile(file: string) {
 
         try {

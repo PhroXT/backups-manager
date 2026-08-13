@@ -3,12 +3,11 @@ import {
     Get,
     Post,
     Param,
+    Query,
 } from '@nestjs/common';
 
 import { BackupsService } from './backups.service';
-import { BackupExecutorService } from './backup-executor.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
-import { Query } from '@nestjs/common';
 
 @Controller('backups')
 export class BackupsController {
