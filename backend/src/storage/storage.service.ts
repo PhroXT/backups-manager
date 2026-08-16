@@ -68,5 +68,14 @@ export class StorageService implements OnModuleInit {
             size: object.size,
         };
     }
-
+    
+    async deleteFile(
+        bucket: string,
+        objectName: string,
+    ) {
+        await this.client.removeObject(
+            bucket,
+            objectName,
+        );
+    }
 }

@@ -4,6 +4,7 @@ import * as path from 'path';
 import { StorageService } from '../storage/storage.service';
 import { BackupRunnerService } from './backups-runner.service';
 import { PrismaService } from '../prisma/prisma.service';
+//import { BackupsService } from './backups.service';
 
 @Injectable()
 export class BackupExecutorService {
@@ -14,6 +15,7 @@ export class BackupExecutorService {
         private readonly storage: StorageService,
         private readonly runner: BackupRunnerService,
         private readonly prisma: PrismaService,
+        //private readonly backupsService: BackupsService,
     ) { }
 
     async cancel(backupId: string): Promise<boolean> {
@@ -125,10 +127,8 @@ export class BackupExecutorService {
                 );
             }
 
-            // Valida la estructura del dump.
             await this.runner.validatePgDump(filename);
 
-            // Sube el backup al almacenamiento.
             await this.storage.uploadFile(
                 'backups',
                 filename,
@@ -147,6 +147,51 @@ export class BackupExecutorService {
                     errorMessage: null,
                 },
             });
+
+            if (backup.weeklyKey || backup.monthlyKey) {
+                const oldBackups = await this.prisma.backup.findMany({
+                    where: {
+                        projectId: backup.projectId,
+                        status: 'completed',
+                        id: {
+                            not: backup.id,
+                        },
+                        OR: [
+                            ...(backup.weeklyKey
+                                ? [{ weeklyKey: backup.weeklyKey }]
+                                : []),
+
+                            ...(backup.monthlyKey
+                                ? [{ monthlyKey: backup.monthlyKey }]
+                                : []),
+                        ],
+                    },
+                });
+
+                for (const oldBackup of oldBackups) {
+                    if (oldBackup.filename) {
+                        try {
+                            await this.storage.deleteFile(
+                                'backups',
+                                oldBackup.filename,
+                            );
+                        } catch (error) {
+                            console.error(
+                                `Failed to delete old backup from storage: ${oldBackup.id}`,
+                                error,
+                            );
+
+                            continue;
+                        }
+                    }
+
+                    await this.prisma.backup.delete({
+                        where: {
+                            id: oldBackup.id,
+                        },
+                    });
+                }
+            }
 
             await this.removeLocalFile(file);
 

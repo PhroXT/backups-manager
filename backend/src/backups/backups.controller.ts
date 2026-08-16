@@ -20,7 +20,10 @@ export class BackupsController {
     async create(
         @Param('id') id: string,
     ) {
-        return this.backupsService.create(id);
+        //return this.backupsService.create(id);
+        return this.backupsService.create(id, {
+            weeklyKey: 'monday',
+        });
     }
 
     @Post(':id/cancel')

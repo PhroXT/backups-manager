@@ -43,6 +43,19 @@ export class SchedulerService {
                             schedule.id,
                         );
                     }
+
+                    const retention =
+                        this.getRetention(schedule, now);
+
+                    await this.backupsService.create(
+                        schedule.projectId,
+                        retention,
+                    );
+
+                    await this.backupsService.create(
+                        schedule.projectId,
+                        retention,
+                    );
                 }
             } catch (error) {
 
@@ -53,6 +66,54 @@ export class SchedulerService {
 
             }
         }
+    }
+
+    private getRetention(
+        schedule: any,
+        date: Date,
+    ): {
+        weeklyKey?: string;
+        monthlyKey?: string;
+    } | undefined {
+
+        const retention: {
+            weeklyKey?: string;
+            monthlyKey?: string;
+        } = {};
+
+        if (schedule.weeklyRetention) {
+
+            const days = [
+                'sunday',
+                'monday',
+                'tuesday',
+                'wednesday',
+                'thursday',
+                'friday',
+                'saturday',
+            ];
+
+            retention.weeklyKey =
+                days[date.getDay()];
+        }
+
+        if (
+            schedule.monthlyRetention &&
+            date.getDate() === 1
+        ) {
+
+            retention.monthlyKey =
+                String(date.getMonth() + 1);
+        }
+
+        if (
+            !retention.weeklyKey &&
+            !retention.monthlyKey
+        ) {
+            return undefined;
+        }
+
+        return retention;
     }
 
     private shouldExecute(

@@ -54,6 +54,9 @@ model Backup {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  weeklyKey  String?
+  monthlyKey String?
+
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
@@ -69,4 +72,7 @@ model Schedule {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  weeklyRetention  Boolean @default(true)
+  monthlyRetention Boolean @default(false)
 }

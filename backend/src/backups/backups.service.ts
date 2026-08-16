@@ -18,8 +18,13 @@ export class BackupsService {
         private readonly executor: BackupExecutorService,
     ) { }
 
-    async create(projectId: string) {
-
+    async create(
+        projectId: string,
+        retention?: {
+            weeklyKey?: string;
+            monthlyKey?: string;
+        },
+    ) {
         const activeBackup = await this.prisma.backup.findFirst({
             where: {
                 projectId,
@@ -34,12 +39,14 @@ export class BackupsService {
         }
 
         try {
-
+            console.log('RETENTION:', retention);
             const backup = await this.prisma.backup.create({
                 data: {
                     projectId,
                     filename: 'pending.dump',
                     status: 'pending',
+                    weeklyKey: retention?.weeklyKey,
+                    monthlyKey: retention?.monthlyKey,
                 },
             });
 
@@ -207,5 +214,35 @@ export class BackupsService {
         }
 
         return true;
+    }
+
+    async findRetentionBackups(
+        projectId: string,
+        weeklyKey?: string,
+        monthlyKey?: string,
+        excludeId?: string,
+    ) {
+        if (!weeklyKey && !monthlyKey) {
+            return [];
+        }
+        return this.prisma.backup.findMany({
+            where: {
+                projectId,
+                status: 'completed',
+                id: excludeId
+                    ? { not: excludeId }
+                    : undefined,
+
+                OR: [
+                    ...(weeklyKey
+                        ? [{ weeklyKey }]
+                        : []),
+
+                    ...(monthlyKey
+                        ? [{ monthlyKey }]
+                        : []),
+                ],
+            },
+        });
     }
 }
