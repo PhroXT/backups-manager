@@ -2,6 +2,10 @@ import EmptyState from "./EmptyState";
 
 type Column<T> = { key?: keyof T; label: string; render?: (row: T) => React.ReactNode };
 
+type Identifiable = {
+    id: string;
+};
+
 type Pagination = {
     page: number;
     totalPages: number;
@@ -25,7 +29,7 @@ type PageSize = {
     onChange: (value: number) => void;
 };
 
-type Props<T> = {
+type Props<T extends Identifiable> = {
     columns: Column<T>[];
     data: T[];
     pagination?: Pagination;
@@ -35,7 +39,7 @@ type Props<T> = {
     pageSize?: PageSize;
 };
 
-export default function DataTable<T>({ columns, data, pagination, search, sort, pageSize }: Props<T>) {
+export default function DataTable<T extends Identifiable>({ columns, data, pagination, search, sort, pageSize }: Props<T>) {
     const rows = data ?? [];
 
     const handleSort = (columnKey?: keyof T) => {
@@ -110,8 +114,8 @@ export default function DataTable<T>({ columns, data, pagination, search, sort, 
                         </thead>
 
                         <tbody>
-                            {rows.map((row, index) => (
-                                <tr key={index} className="border-t border-border hover:bg-foreground/5">
+                            {rows.map((row) => (
+                                <tr key={row.id} className="border-t border-border hover:bg-foreground/5">
                                     {columns.map((column, i) => (
                                         <td key={i} className="p-3 text-sm">
                                             {column.render ? column.render(row) : String(row[column.key!])}

@@ -8,8 +8,9 @@ import Badge from '@/src/components/ui/Badge';
 import Alert from '@/src/components/ui/Alert';
 
 import ScheduleModal from '@/src/components/schedules/ScheduleModal';
-import { useSchedules } from '@/src/hooks/useSchedules';
+import { useSchedules, Schedule, } from '@/src/hooks/useSchedules';
 import { AlertState } from '@/src/types/Alert.type';
+import DataTable from '@/src/components/ui/DataTable';
 
 export default function SchedulesPage() {
 
@@ -17,6 +18,16 @@ export default function SchedulesPage() {
         schedules,
         loading,
         reload,
+        page,
+        setPage,
+        limit,
+        setLimit,
+        search,
+        setSearch,
+        totalPages,
+        sort,
+        order,
+        changeSort,
     } = useSchedules();
 
     const [open, setOpen] = useState(false);
@@ -67,6 +78,66 @@ export default function SchedulesPage() {
         return `${days.join(' · ')} · ${time}`;
     }
 
+    const columns = [
+        {
+            label: 'Project',
+            render: (schedule: Schedule) => (
+                <span className="font-medium">
+                    {schedule.project.name}
+                </span>
+            ),
+        },
+
+        {
+            label: 'Schedule',
+            render: (schedule: Schedule) => (
+                formatSchedule(
+                    schedule.cron,
+                    schedule.retentionType,
+                )
+            ),
+        },
+
+        {
+            label: 'Retention',
+            render: (schedule: Schedule) => (
+                schedule.retentionType === 'monthly'
+                    ? 'Monthly'
+                    : 'Weekly'
+            ),
+        },
+
+        {
+            label: 'Status',
+            render: (schedule: Schedule) => (
+                <Badge
+                    variant={
+                        schedule.enabled
+                            ? 'success'
+                            : 'neutral'
+                    }
+                >
+                    {schedule.enabled
+                        ? 'Active'
+                        : 'Disabled'}
+                </Badge>
+            ),
+        },
+
+        {
+            label: 'Last Run',
+            render: (schedule: Schedule) => (
+                <span className="text-muted">
+                    {schedule.lastRun
+                        ? new Date(
+                            schedule.lastRun,
+                        ).toLocaleString()
+                        : 'Never'}
+                </span>
+            ),
+        },
+    ];
+
     return (
         <div>
 
@@ -98,115 +169,33 @@ export default function SchedulesPage() {
             )}
 
 
-            <div className="border border-border rounded-lg overflow-hidden">
-
-                {loading ? (
-
-                    <div className="p-6 text-muted">
-                        Loading schedules...
-                    </div>
-
-                ) : schedules.length === 0 ? (
-
-                    <div className="p-6 text-muted">
-                        No schedules configured.
-                    </div>
-
-                ) : (
-
-                    <div className="overflow-x-auto">
-
-                        <table className="w-full text-sm">
-
-                            <thead className="border-b border-border">
-                                <tr className="text-left">
-
-                                    <th className="px-4 py-3">
-                                        Project
-                                    </th>
-
-                                    <th className="px-4 py-3">
-                                        Schedule
-                                    </th>
-
-                                    <th className="px-4 py-3">
-                                        Retention
-                                    </th>
-
-                                    <th className="px-4 py-3">
-                                        Status
-                                    </th>
-
-                                    <th className="px-4 py-3">
-                                        Last Run
-                                    </th>
-
-                                </tr>
-                            </thead>
-
-                            <tbody>
-
-                                {schedules.map((schedule) => (
-
-                                    <tr
-                                        key={schedule.id}
-                                        className="border-b border-border last:border-0"
-                                    >
-
-                                        <td className="px-4 py-3 font-medium">
-                                            {schedule.project.name}
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            {formatSchedule(
-                                                schedule.cron,
-                                                schedule.retentionType,
-                                            )}
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            {schedule.retentionType === 'monthly'
-                                                ? 'Monthly'
-                                                : 'Weekly'}
-                                        </td>
-
-                                        <td className="px-4 py-3">
-
-                                            <Badge
-                                                variant={
-                                                    schedule.enabled
-                                                        ? 'success'
-                                                        : 'neutral'
-                                                }
-                                            >
-                                                {schedule.enabled
-                                                    ? 'Active'
-                                                    : 'Disabled'}
-                                            </Badge>
-
-                                        </td>
-
-                                        <td className="px-4 py-3 text-muted">
-                                            {schedule.lastRun
-                                                ? new Date(
-                                                    schedule.lastRun,
-                                                ).toLocaleString()
-                                                : 'Never'}
-                                        </td>
-
-                                    </tr>
-
-                                ))}
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                )}
-
-            </div>
+            <DataTable
+                columns={columns}
+                data={schedules}
+                loading={loading}
+                search={{
+                    value: search,
+                    onChange: setSearch,
+                }}
+                pageSize={{
+                    value: limit,
+                    options: [5, 10, 20, 50],
+                    onChange: (value) => {
+                        setLimit(value);
+                        setPage(1);
+                    },
+                }}
+                pagination={{
+                    page,
+                    totalPages,
+                    onPageChange: setPage,
+                }}
+                sort={{
+                    field: sort,
+                    order,
+                    onChange: changeSort,
+                }}
+            />
 
 
             <ScheduleModal

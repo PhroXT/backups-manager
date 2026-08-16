@@ -1,28 +1,46 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PaginationDto } from '../common/dto/pagination.dto';
+import { PaginationService } from '../common/pagination/pagination.service';
 
 @Injectable()
 export class SchedulesService {
-    async findAll() {
+    async findAll(query: PaginationDto) {
 
-        return this.prisma.schedule.findMany({
-            include: {
-                project: {
-                    select: {
-                        id: true,
-                        name: true,
+        return this.paginationService.paginate(
+            this.prisma.schedule,
+            query,
+            {
+                searchableFields: [
+                    'cron',
+                    'retentionType',
+                    'project.name',
+                ],
+
+                sortableFields: [
+                    'cron',
+                    'retentionType',
+                    'enabled',
+                    'lastRun',
+                    'createdAt',
+                ],
+            },
+            {
+                include: {
+                    project: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
                     },
                 },
             },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
-
+        );
     }
 
     constructor(
         private readonly prisma: PrismaService,
+        private readonly paginationService: PaginationService,
     ) { }
 
     async findEnabled() {

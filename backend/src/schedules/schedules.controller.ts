@@ -3,9 +3,11 @@ import {
     Get,
     Post,
     Body,
+    Query,
 } from '@nestjs/common';
 
 import { SchedulesService } from './schedules.service';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('schedules')
 export class SchedulesController {
@@ -15,8 +17,10 @@ export class SchedulesController {
     ) { }
 
     @Get()
-    findAll() {
-        return this.schedulesService.findAll();
+    findAll(
+        @Query() query: PaginationDto,
+    ) {
+        return this.schedulesService.findAll(query);
     }
 
     @Post()
