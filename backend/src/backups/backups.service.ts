@@ -39,7 +39,6 @@ export class BackupsService {
         }
 
         try {
-            console.log('RETENTION:', retention);
             const backup = await this.prisma.backup.create({
                 data: {
                     projectId,

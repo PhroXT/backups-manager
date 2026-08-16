@@ -3,6 +3,23 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class SchedulesService {
+    async findAll() {
+
+        return this.prisma.schedule.findMany({
+            include: {
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+
+    }
 
     constructor(
         private readonly prisma: PrismaService,
@@ -32,5 +49,27 @@ export class SchedulesService {
             },
         });
 
+    }
+
+    async create(data: {
+        projectId: string;
+        cron: string;
+        retentionType: string;
+    }) {
+        return this.prisma.schedule.create({
+            data: {
+                projectId: data.projectId,
+                cron: data.cron,
+                retentionType: data.retentionType,
+            },
+            include: {
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        });
     }
 }

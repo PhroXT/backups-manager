@@ -14,7 +14,7 @@ export class SchedulerService {
         private readonly backupsService: BackupsService,
     ) { }
 
-    @Cron('* 5 * * *')
+    @Cron('* * * * *')
     async handleCron() {
 
         const schedules =
@@ -34,8 +34,14 @@ export class SchedulerService {
                         `Executing schedule ${schedule.id}`,
                     );
 
+                    const retention = this.getRetention(
+                        schedule,
+                        now,
+                    );
+
                     const backup = await this.backupsService.create(
                         schedule.projectId,
+                        retention,
                     );
 
                     if (backup) {
@@ -43,9 +49,6 @@ export class SchedulerService {
                             schedule.id,
                         );
                     }
-
-                    const retention =
-                        this.getRetention(schedule, now);
 
                     await this.backupsService.create(
                         schedule.projectId,
@@ -71,49 +74,28 @@ export class SchedulerService {
     private getRetention(
         schedule: any,
         date: Date,
-    ): {
-        weeklyKey?: string;
-        monthlyKey?: string;
-    } | undefined {
-
-        const retention: {
-            weeklyKey?: string;
-            monthlyKey?: string;
-        } = {};
-
-        if (schedule.weeklyRetention) {
-
-            const days = [
-                'sunday',
-                'monday',
-                'tuesday',
-                'wednesday',
-                'thursday',
-                'friday',
-                'saturday',
-            ];
-
-            retention.weeklyKey =
-                days[date.getDay()];
+    ) {
+        if (schedule.retentionType === 'monthly') {
+            return {
+                monthlyKey: String(
+                    date.getMonth() + 1,
+                ).padStart(2, '0'),
+            };
         }
 
-        if (
-            schedule.monthlyRetention &&
-            date.getDate() === 1
-        ) {
+        const days = [
+            'sunday',
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+            'saturday',
+        ];
 
-            retention.monthlyKey =
-                String(date.getMonth() + 1);
-        }
-
-        if (
-            !retention.weeklyKey &&
-            !retention.monthlyKey
-        ) {
-            return undefined;
-        }
-
-        return retention;
+        return {
+            weeklyKey: days[date.getDay()],
+        };
     }
 
     private shouldExecute(
@@ -124,12 +106,21 @@ export class SchedulerService {
         const cronTime =
             new CronTime(schedule.cron);
 
-        const reference =
-            schedule.lastRun ?? now;
+        if (!schedule.lastRun) {
+
+            const reference = new Date(
+                now.getTime() - 60 * 1000,
+            );
+
+            const next =
+                cronTime.getNextDateFrom(reference);
+
+            return next.toMillis() <= now.getTime();
+        }
 
         const next =
             cronTime.getNextDateFrom(
-                reference,
+                schedule.lastRun,
             );
 
         return next.toMillis() <= now.getTime();

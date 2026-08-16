@@ -17,6 +17,10 @@ export default function Sidebar() {
             href: "/dashboard/projects",
         },
         {
+            name: "Schedules",
+            href: "/dashboard/schedules",
+        },
+        {
             name: "Backups",
             href: "/dashboard/backups",
         },
