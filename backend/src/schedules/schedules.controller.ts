@@ -4,6 +4,8 @@ import {
     Post,
     Body,
     Query,
+    Patch,
+    Param,
 } from '@nestjs/common';
 
 import { SchedulesService } from './schedules.service';
@@ -33,5 +35,10 @@ export class SchedulesController {
         },
     ) {
         return this.schedulesService.create(data);
+    }
+
+    @Patch(':id/toggle')
+    toggleEnabled(@Param('id') id: string) {
+        return this.schedulesService.toggleEnabled(id);
     }
 }

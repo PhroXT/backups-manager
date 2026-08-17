@@ -90,4 +90,29 @@ export class SchedulesService {
             },
         });
     }
+
+    async toggleEnabled(id: string) {
+        const schedule = await this.prisma.schedule.findUnique({
+            where: { id },
+        });
+
+        if (!schedule) {
+            throw new Error('Schedule not found');
+        }
+
+        return this.prisma.schedule.update({
+            where: { id },
+            data: {
+                enabled: !schedule.enabled,
+            },
+            include: {
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        });
+    }
 }

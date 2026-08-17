@@ -39,7 +39,7 @@ type Props<T extends Identifiable> = {
     pageSize?: PageSize;
 };
 
-export default function DataTable<T extends Identifiable>({ columns, data, pagination, search, sort, pageSize }: Props<T>) {
+export default function DataTable<T extends Identifiable>({ columns, data, pagination, search, sort, pageSize, loading }: Props<T>) {
     const rows = data ?? [];
 
     const handleSort = (columnKey?: keyof T) => {
@@ -90,8 +90,18 @@ export default function DataTable<T extends Identifiable>({ columns, data, pagin
                 )}
             </div>
 
-            {!rows.length && !search?.value ? (
-                <EmptyState message="No records found" />
+            {loading ? (
+                <div className="rounded-lg border border-border bg-card p-6 text-muted">
+                    Loading...
+                </div>
+            ) : !rows.length ? (
+                <EmptyState
+                    message={
+                        search?.value
+                            ? "No records match your search."
+                            : "No records found."
+                    }
+                />
             ) : (
                 <div className="overflow-x-auto rounded-lg border border-border bg-card">
                     <table className="w-full">

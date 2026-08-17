@@ -28,6 +28,7 @@ export default function SchedulesPage() {
         sort,
         order,
         changeSort,
+        toggleEnabled,
     } = useSchedules();
 
     const [open, setOpen] = useState(false);
@@ -80,6 +81,7 @@ export default function SchedulesPage() {
 
     const columns = [
         {
+            key: 'project' as keyof Schedule,
             label: 'Project',
             render: (schedule: Schedule) => (
                 <span className="font-medium">
@@ -91,23 +93,29 @@ export default function SchedulesPage() {
         {
             label: 'Schedule',
             render: (schedule: Schedule) => (
-                formatSchedule(
-                    schedule.cron,
-                    schedule.retentionType,
-                )
+                <>
+                    {formatSchedule(
+                        schedule.cron,
+                        schedule.retentionType,
+                    )}
+                </>
             ),
         },
 
         {
+            key: 'retentionType' as keyof Schedule,
             label: 'Retention',
             render: (schedule: Schedule) => (
-                schedule.retentionType === 'monthly'
-                    ? 'Monthly'
-                    : 'Weekly'
+                <>
+                    {schedule.retentionType === 'monthly'
+                        ? 'Monthly'
+                        : 'Weekly'}
+                </>
             ),
         },
 
         {
+            key: 'enabled' as keyof Schedule,
             label: 'Status',
             render: (schedule: Schedule) => (
                 <Badge
@@ -125,6 +133,7 @@ export default function SchedulesPage() {
         },
 
         {
+            key: 'lastRun' as keyof Schedule,
             label: 'Last Run',
             render: (schedule: Schedule) => (
                 <span className="text-muted">
@@ -134,6 +143,24 @@ export default function SchedulesPage() {
                         ).toLocaleString()
                         : 'Never'}
                 </span>
+            ),
+        },
+
+        {
+            label: 'Actions',
+            render: (schedule: Schedule) => (
+                <div className="flex gap-2">
+
+                    <Button
+                        variant="secondary"
+                        onClick={() => toggleEnabled(schedule.id)}
+                    >
+                        {schedule.enabled
+                            ? 'Disable'
+                            : 'Enable'}
+                    </Button>
+
+                </div>
             ),
         },
     ];
@@ -196,7 +223,6 @@ export default function SchedulesPage() {
                     onChange: changeSort,
                 }}
             />
-
 
             <ScheduleModal
                 open={open}

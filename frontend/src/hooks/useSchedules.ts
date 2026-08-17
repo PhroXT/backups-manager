@@ -75,6 +75,18 @@ export function useSchedules() {
         }
     }
 
+    async function toggleEnabled(id: string) {
+
+        await apiFetch(
+            `/schedules/${id}/toggle`,
+            {
+                method: 'PATCH',
+            },
+        );
+
+        await load();
+    }
+
     useEffect(() => {
         load();
     }, [page, debouncedSearch, sort, order]);
@@ -98,5 +110,7 @@ export function useSchedules() {
         sort,
         order,
         changeSort,
+
+        toggleEnabled,
     };
 }
