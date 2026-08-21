@@ -9,6 +9,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { CommonModule } from "./common/common.module";
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CommonModule } from "./common/common.module";
     SchedulerModule,
     SchedulesModule,
     CommonModule,
+    AuthModule,
   ]
 })
 export class AppModule { }
