@@ -45,14 +45,7 @@ export default function DataTable<T extends Identifiable>({ columns, data, pagin
     const handleSort = (columnKey?: keyof T) => {
         if (!columnKey || !sort) return;
 
-        const key = String(columnKey);
-
-        if (sort.field !== key) {
-            sort.onChange(key);
-            return;
-        }
-
-        sort.onChange(key);
+        sort.onChange(String(columnKey));
     };
 
     const getSortIndicator = (columnKey?: keyof T) => {

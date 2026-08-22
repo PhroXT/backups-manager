@@ -46,7 +46,7 @@ export default function BackupsPage() {
 
             <PageHeader
                 title="Backups"
-                description=""
+                description="Backups generation, history and status."
             />
 
             <DataTable
