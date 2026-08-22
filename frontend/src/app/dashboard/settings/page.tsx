@@ -6,6 +6,7 @@ import DataTable from "@/src/components/ui/DataTable";
 import Button from "@/src/components/ui/Button";
 import Alert from "@/src/components/ui/Alert";
 import PageHeader from "@/src/components/ui/PageHeader";
+import CreateUserModal from "@/src/components/settingsPage/CreateUserModal";
 
 type User = {
     id: string;
@@ -18,6 +19,7 @@ type User = {
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function SettingsPage() {
+    const [createModalOpen, setCreateModalOpen] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -168,9 +170,7 @@ export default function SettingsPage() {
 
                     <Button
                         variant="secondary"
-                        onClick={() => {
-                            console.log("Create user");
-                        }}
+                        onClick={() => setCreateModalOpen(true)}
                     >
                         Add user
                     </Button>
@@ -191,6 +191,27 @@ export default function SettingsPage() {
                     }}
                 />
             </Card>
+
+            <CreateUserModal
+                open={createModalOpen}
+                onClose={() => setCreateModalOpen(false)}
+                onCreated={async () => {
+                    await loadUsers();
+
+                    setAlert({
+                        variant: "success",
+                        title: "User created",
+                        message: "The user was created successfully.",
+                    });
+                }}
+                onError={(message) => {
+                    setAlert({
+                        variant: "error",
+                        title: "Unable to create user",
+                        message,
+                    });
+                }}
+            />
         </main>
     );
 }
