@@ -1,4 +1,5 @@
 import Sidebar from "@/src/components/layout/Sidebar";
+import AuthProtection from "@/src/components/auth/auth-protection"
 
 export default function DashboardLayout({
     children,
@@ -12,7 +13,9 @@ export default function DashboardLayout({
             <Sidebar />
 
             <main className="flex-1 bg-background text-foreground p-6">
-                {children}
+                <AuthProtection>
+                    {children}
+                </AuthProtection>
             </main>
 
         </div>

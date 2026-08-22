@@ -79,4 +79,19 @@ export class UsersService {
             password,
         );
     }
+
+    async findAll() {
+        return this.prisma.user.findMany({
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+            orderBy: {
+                createdAt: 'asc',
+            },
+        });
+    }
 }

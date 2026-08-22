@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeButton from "../ui/theme-button";
+import LogoutButton from "../auth/logout-button";
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -53,6 +54,7 @@ export default function Sidebar() {
 
             </nav>
             <footer>
+                <LogoutButton />
                 <ThemeButton />
             </footer>
         </aside>

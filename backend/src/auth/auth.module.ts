@@ -5,10 +5,11 @@ import { AuthGuard } from './auth.guard';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
 import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
 
 @Module({
     imports: [PrismaModule],
-    controllers: [AuthController],
+    controllers: [AuthController, UsersController],
     providers: [
         PasswordService,
         SessionService,
