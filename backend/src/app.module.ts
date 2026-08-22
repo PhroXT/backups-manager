@@ -30,6 +30,7 @@ import { AuthModule } from './auth/auth.module';
     SchedulesModule,
     CommonModule,
     AuthModule,
+    SchedulesModule,
   ]
 })
 export class AppModule { }
