@@ -1,18 +1,44 @@
 import {
     Body,
     Controller,
+    Get,
+    UseGuards,
     Post,
+    Req,
     Res,
     UnauthorizedException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { UsersService } from './users.service';
+import { SessionService } from './session.service';
+import { AuthGuard } from './auth.guard';
 
 @Controller('auth')
 export class AuthController {
     constructor(
         private readonly usersService: UsersService,
+        private readonly sessionService: SessionService,
     ) { }
+
+    @Get('me')
+    @UseGuards(AuthGuard)
+    me(@Req() request: Request) {
+        return request.user;
+    }
+
+    @Post('logout')
+    logout(@Res({ passthrough: true }) response: Response) {
+        response.clearCookie('auth', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+        });
+
+        return {
+            success: true,
+        };
+    }
 
     @Post('login')
     async login(
@@ -45,14 +71,17 @@ export class AuthController {
             );
         }
 
+        const token = this.sessionService.createToken(user.id);
+
         response.cookie(
             'auth',
-            user.id,
+            token,
             {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
                 path: '/',
+                maxAge: 24 * 60 * 60 * 1000,
             },
         );
 
