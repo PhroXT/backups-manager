@@ -9,6 +9,7 @@ import PageHeader from "@/src/components/ui/PageHeader";
 import CreateUserModal from "@/src/components/settingsPage/CreateUserModal";
 import EditUserModal from "@/src/components/settingsPage/EditUserModal";
 import ChangePasswordModal from "@/src/components/settingsPage/ChangePasswordModal";
+import DeleteUserModal from "@/src/components/settingsPage/DeleteUserModal";
 
 type User = {
     id: string;
@@ -21,6 +22,7 @@ type User = {
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function SettingsPage() {
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [passwordModalOpen, setPasswordModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -144,6 +146,16 @@ export default function SettingsPage() {
                         }}
                     >
                         Password
+                    </Button>
+
+                    <Button
+                        variant="danger"
+                        onClick={() => {
+                            setSelectedUser(user);
+                            setDeleteModalOpen(true);
+                        }}
+                    >
+                        Delete
                     </Button>
                 </div>
             ),
@@ -282,6 +294,33 @@ export default function SettingsPage() {
                     setAlert({
                         variant: "error",
                         title: "Unable to change password",
+                        message,
+                    });
+                }}
+            />
+            <DeleteUserModal
+                open={deleteModalOpen}
+                user={selectedUser}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setSelectedUser(null);
+                }}
+                onDeleted={async () => {
+                    await loadUsers();
+
+                    setAlert({
+                        variant: "success",
+                        title: "User deleted",
+                        durationMs: 2000,
+                        message:
+                            "The user was deleted successfully.",
+                    });
+                }}
+                onError={(message) => {
+                    setAlert({
+                        variant: "error",
+                        durationMs: 2000,
+                        title: "Unable to delete user",
                         message,
                     });
                 }}
