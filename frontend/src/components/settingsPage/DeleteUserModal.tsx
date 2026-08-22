@@ -30,6 +30,8 @@ export default function DeleteUserModal({
     onError,
 }: DeleteUserModalProps) {
     const [loading, setLoading] = useState(false);
+    const [confirmation, setConfirmation] = useState("");
+    const canDelete = confirmation === "delete";
 
     async function handleDelete() {
         if (!user) {
@@ -61,8 +63,10 @@ export default function DeleteUserModal({
                 throw new Error(message);
             }
 
+            setConfirmation("");
             onDeleted();
             onClose();
+
         } catch (error) {
             onError(
                 error instanceof Error
@@ -74,14 +78,19 @@ export default function DeleteUserModal({
         }
     }
 
+    function handleClose() {
+        if (loading) {
+            return;
+        }
+
+        setConfirmation("");
+        onClose();
+    }
+
     return (
         <Modal
             open={open}
-            onClose={() => {
-                if (!loading) {
-                    onClose();
-                }
-            }}
+            onClose={handleClose}
             title="Delete user"
         >
             <div className="space-y-5">
@@ -100,11 +109,28 @@ export default function DeleteUserModal({
                     </p>
                 </div>
 
+                <div className="space-y-2">
+                    <p className="text-sm text-muted">
+                        Type <span className="font-semibold text-foreground">delete</span>{" "}
+                        to confirm.
+                    </p>
+
+                    <input
+                        type="text"
+                        value={confirmation}
+                        onChange={(event) => setConfirmation(event.target.value)}
+                        placeholder="delete"
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                        autoComplete="off"
+                        spellCheck={false}
+                    />
+                </div>
+
                 <div className="flex justify-end gap-2">
                     <Button
                         type="button"
                         variant="secondary"
-                        onClick={onClose}
+                        onClick={handleClose}
                         disabled={loading}
                     >
                         Cancel
@@ -114,11 +140,9 @@ export default function DeleteUserModal({
                         type="button"
                         variant="danger"
                         onClick={handleDelete}
-                        disabled={loading}
+                        disabled={!canDelete || loading}
                     >
-                        {loading
-                            ? "Deleting..."
-                            : "Delete user"}
+                        {loading ? "Deleting..." : "Delete user"}
                     </Button>
                 </div>
             </div>
