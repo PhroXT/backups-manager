@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
+import type { StringValue } from 'ms';
+import { sessionDurationToMs } from './session-duration';
 
 @Injectable()
 export class SessionService {
     private readonly secret = process.env.SESSION_SECRET!;
+
+    private readonly expiresIn: StringValue =
+        (process.env.SESSION_EXPIRES_IN || '1h') as StringValue;
 
     createToken(userId: string): string {
         return jwt.sign(
@@ -12,9 +17,13 @@ export class SessionService {
             },
             this.secret,
             {
-                expiresIn: '1d',
+                expiresIn: this.expiresIn,
             },
         );
+    }
+
+    getExpirationMs(): number {
+        return sessionDurationToMs(this.expiresIn);
     }
 
     verifyToken(token: string): { sub: string } {

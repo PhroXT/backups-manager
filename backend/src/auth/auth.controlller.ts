@@ -2,7 +2,6 @@ import {
     Body,
     Controller,
     Get,
-    UseGuards,
     Post,
     Req,
     Res,
@@ -81,7 +80,7 @@ export class AuthController {
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
                 path: '/',
-                maxAge: 24 * 60 * 60 * 1000,
+                maxAge: this.sessionService.getExpirationMs(),
             },
         );
 
