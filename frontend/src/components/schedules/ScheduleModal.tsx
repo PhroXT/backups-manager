@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '@/src/components/ui/Modal';
 import Button from '@/src/components/ui/Button';
 import { useProjects } from '@/src/hooks/useProjects';
 import { apiFetch } from '@/src/lib/api';
+import { Schedule } from '@/src/hooks/useSchedules';
 
 type ScheduleModalProps = {
     open: boolean;
+    schedule?: Schedule | null;
     onClose: () => void;
-    onCreated?: () => void;
+    onSaved?: () => void;
 };
 
 const weekDays = [
@@ -24,23 +26,74 @@ const weekDays = [
 
 export default function ScheduleModal({
     open,
+    schedule,
     onClose,
-    onCreated,
+    onSaved,
 }: ScheduleModalProps) {
 
-    const [creating, setCreating] = useState(false);
     const { projects, loading: projectsLoading } = useProjects();
+
+    const [saving, setSaving] = useState(false);
 
     const [projectId, setProjectId] = useState('');
     const [time, setTime] = useState('02:00');
-
     const [days, setDays] = useState<string[]>([]);
 
     const [retentionType, setRetentionType] =
         useState<'weekly' | 'monthly'>('weekly');
 
-    function toggleDay(day: string) {
+    const editing = Boolean(schedule);
 
+    /*
+     * Load schedule data when editing.
+     */
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        if (!schedule) {
+            resetForm();
+            return;
+        }
+
+        const parts = schedule.cron.split(' ');
+
+        const minutes = parts[0];
+        const hours = parts[1];
+        const cronDays = parts[4];
+
+        setProjectId(schedule.projectId);
+
+        setTime(
+            `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`,
+        );
+
+        setRetentionType(
+            schedule.retentionType === 'monthly'
+                ? 'monthly'
+                : 'weekly',
+        );
+
+        if (schedule.retentionType === 'weekly') {
+            setDays(
+                cronDays
+                    .split(',')
+                    .filter(Boolean),
+            );
+        } else {
+            setDays([]);
+        }
+    }, [open, schedule]);
+
+    function resetForm() {
+        setProjectId('');
+        setTime('02:00');
+        setDays([]);
+        setRetentionType('weekly');
+    }
+
+    function toggleDay(day: string) {
         setDays(current =>
             current.includes(day)
                 ? current.filter(value => value !== day)
@@ -49,17 +102,15 @@ export default function ScheduleModal({
     }
 
     function handleClose() {
+        if (saving) {
+            return;
+        }
 
-        setProjectId('');
-        setTime('02:00');
-        setDays([]);
-        setRetentionType('weekly');
-
+        resetForm();
         onClose();
     }
 
     function buildCron(): string {
-
         const [hours, minutes] = time.split(':');
 
         if (retentionType === 'monthly') {
@@ -73,8 +124,7 @@ export default function ScheduleModal({
         return `${Number(minutes)} ${Number(hours)} * * ${sortedDays}`;
     }
 
-    async function handleCreate() {
-
+    async function handleSave() {
         if (!projectId) {
             return;
         }
@@ -86,26 +136,36 @@ export default function ScheduleModal({
             return;
         }
 
-        setCreating(true);
+        setSaving(true);
 
         try {
+            const payload = {
+                projectId,
+                cron: buildCron(),
+                retentionType,
+            };
 
-            await apiFetch('/schedules', {
-                method: 'POST',
-                body: JSON.stringify({
-                    projectId,
-                    cron: buildCron(),
-                    retentionType,
-                }),
-            });
+            if (editing) {
+                await apiFetch(
+                    `/schedules/${schedule!.id}`,
+                    {
+                        method: 'PATCH',
+                        body: JSON.stringify(payload),
+                    },
+                );
+            } else {
+                await apiFetch('/schedules', {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                });
+            }
 
-            handleClose();
-            onCreated?.();
+            resetForm();
+            onSaved?.();
+            onClose();
 
         } finally {
-
-            setCreating(false);
-
+            setSaving(false);
         }
     }
 
@@ -113,32 +173,40 @@ export default function ScheduleModal({
         <Modal
             open={open}
             onClose={handleClose}
-            title="Create schedule"
+            title={
+                editing
+                    ? 'Edit schedule'
+                    : 'Create schedule'
+            }
         >
-
             <div className="space-y-5">
 
                 {/* Project */}
 
                 <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="mb-2 block text-sm font-medium">
                         Project
                     </label>
 
                     <select
                         value={projectId}
-                        onChange={(e) => setProjectId(e.target.value)}
-                        disabled={projectsLoading}
+                        onChange={(e) =>
+                            setProjectId(e.target.value)
+                        }
+                        disabled={
+                            projectsLoading || saving
+                        }
                         className="
-                        w-full
-                        rounded-md
-                        border
-                        border-border
-                        bg-card
-                        px-3
-                        py-2
-                        text-foreground
-                        disabled:opacity-50"
+                            w-full
+                            rounded-md
+                            border
+                            border-border
+                            bg-card
+                            px-3
+                            py-2
+                            text-foreground
+                            disabled:opacity-50
+                        "
                     >
                         <option value="">
                             {projectsLoading
@@ -157,11 +225,10 @@ export default function ScheduleModal({
                     </select>
                 </div>
 
-
                 {/* Time */}
 
                 <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="mb-2 block text-sm font-medium">
                         Backup time
                     </label>
 
@@ -171,6 +238,7 @@ export default function ScheduleModal({
                         onChange={(e) =>
                             setTime(e.target.value)
                         }
+                        disabled={saving}
                         className="
                             rounded-md
                             border
@@ -179,15 +247,15 @@ export default function ScheduleModal({
                             px-3
                             py-2
                             text-foreground
+                            disabled:opacity-50
                         "
                     />
                 </div>
 
-
                 {/* Retention */}
 
                 <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="mb-2 block text-sm font-medium">
                         Retention
                     </label>
 
@@ -195,6 +263,7 @@ export default function ScheduleModal({
 
                         <button
                             type="button"
+                            disabled={saving}
                             onClick={() =>
                                 setRetentionType('weekly')
                             }
@@ -215,6 +284,7 @@ export default function ScheduleModal({
 
                         <button
                             type="button"
+                            disabled={saving}
                             onClick={() =>
                                 setRetentionType('monthly')
                             }
@@ -236,14 +306,12 @@ export default function ScheduleModal({
                     </div>
                 </div>
 
-
                 {/* Days */}
 
                 {retentionType === 'weekly' && (
-
                     <div>
 
-                        <label className="block text-sm font-medium mb-2">
+                        <label className="mb-2 block text-sm font-medium">
                             Days
                         </label>
 
@@ -258,6 +326,7 @@ export default function ScheduleModal({
                                     <button
                                         key={day.value}
                                         type="button"
+                                        disabled={saving}
                                         onClick={() =>
                                             toggleDay(day.value)
                                         }
@@ -277,15 +346,12 @@ export default function ScheduleModal({
                                         {day.label}
                                     </button>
                                 );
-
                             })}
 
                         </div>
 
                     </div>
-
                 )}
-
 
                 {/* Actions */}
 
@@ -294,30 +360,32 @@ export default function ScheduleModal({
                     <Button
                         variant="secondary"
                         onClick={handleClose}
+                        disabled={saving}
                     >
                         Cancel
                     </Button>
 
                     <Button
                         disabled={
-                            creating ||
+                            saving ||
                             !projectId ||
                             (
                                 retentionType === 'weekly' &&
                                 days.length === 0
                             )
                         }
-                        onClick={handleCreate}
+                        onClick={handleSave}
                     >
-                        {creating
-                            ? 'Creating...'
-                            : 'Create schedule'}
+                        {saving
+                            ? 'Saving...'
+                            : editing
+                                ? 'Save changes'
+                                : 'Create schedule'}
                     </Button>
 
                 </div>
 
             </div>
-
         </Modal>
     );
 }

@@ -11,6 +11,7 @@ import ScheduleModal from '@/src/components/schedules/ScheduleModal';
 import { useSchedules, Schedule, } from '@/src/hooks/useSchedules';
 import { AlertState } from '@/src/types/Alert.type';
 import DataTable from '@/src/components/ui/DataTable';
+import DeleteScheduleModal from '@/src/components/schedules/DeleteScheduleModal';
 
 export default function SchedulesPage() {
 
@@ -31,17 +32,25 @@ export default function SchedulesPage() {
         toggleEnabled,
     } = useSchedules();
 
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
     const [open, setOpen] = useState(false);
     const [alert, setAlert] = useState<AlertState>(null);
 
-    async function handleCreated() {
-
+    async function handleSaved() {
         await reload();
+
+        setSelectedSchedule(null);
+        setOpen(false);
 
         setAlert({
             variant: 'success',
-            title: 'Schedule created',
-            message: 'The backup schedule was created successfully.',
+            title: selectedSchedule
+                ? 'Schedule updated'
+                : 'Schedule created',
+            message: selectedSchedule
+                ? 'The backup schedule was updated successfully.'
+                : 'The backup schedule was created successfully.',
         });
     }
 
@@ -160,7 +169,30 @@ export default function SchedulesPage() {
                             : 'Enable'}
                     </Button>
 
+                    <div className="flex gap-2">
+                        <Button
+                            variant="secondary"
+                            onClick={() => {
+                                setSelectedSchedule(schedule);
+                                setOpen(true);
+                            }}
+                        >
+                            Edit
+                        </Button>
+                    </div>
+
+                    <Button
+                        variant="danger"
+                        onClick={() => {
+                            setSelectedSchedule(schedule);
+                            setDeleteOpen(true);
+                        }}
+                    >
+                        Delete
+                    </Button>
+
                 </div>
+
             ),
         },
     ];
@@ -226,8 +258,41 @@ export default function SchedulesPage() {
 
             <ScheduleModal
                 open={open}
-                onClose={() => setOpen(false)}
-                onCreated={handleCreated}
+                schedule={selectedSchedule}
+                onClose={() => {
+                    setOpen(false);
+                    setSelectedSchedule(null);
+                }}
+                onSaved={handleSaved}
+            />
+
+            <DeleteScheduleModal
+                open={deleteOpen}
+                schedule={selectedSchedule}
+                onClose={() => {
+                    setDeleteOpen(false);
+                    setSelectedSchedule(null);
+                }}
+                onDeleted={async () => {
+                    await reload();
+
+                    setDeleteOpen(false);
+                    setSelectedSchedule(null);
+
+                    setAlert({
+                        variant: 'success',
+                        title: 'Schedule deleted',
+                        message:
+                            'The backup schedule was deleted successfully.',
+                    });
+                }}
+                onError={(message) => {
+                    setAlert({
+                        variant: 'error',
+                        title: 'Unable to delete schedule',
+                        message,
+                    });
+                }}
             />
 
         </div>

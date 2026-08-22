@@ -6,6 +6,7 @@ import {
     Query,
     Patch,
     Param,
+    Delete,
 } from '@nestjs/common';
 
 import { SchedulesService } from './schedules.service';
@@ -40,5 +41,24 @@ export class SchedulesController {
     @Patch(':id/toggle')
     toggleEnabled(@Param('id') id: string) {
         return this.schedulesService.toggleEnabled(id);
+    }
+
+    @Patch(':id')
+    async update(
+        @Param('id') id: string,
+        @Body() data: {
+            projectId: string;
+            cron: string;
+            retentionType: string;
+        },
+    ) {
+        return this.schedulesService.update(id, data);
+    }
+
+    @Delete(':id')
+    async remove(
+        @Param('id') id: string,
+    ) {
+        return this.schedulesService.remove(id);
     }
 }

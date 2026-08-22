@@ -115,4 +115,40 @@ export class SchedulesService {
             },
         });
     }
+
+    async update(
+        id: string,
+        data: {
+            projectId: string;
+            cron: string;
+            retentionType: string;
+        },
+    ) {
+        return this.prisma.schedule.update({
+            where: {
+                id,
+            },
+            data: {
+                projectId: data.projectId,
+                cron: data.cron,
+                retentionType: data.retentionType,
+            },
+            include: {
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        });
+    }
+
+    async remove(id: string) {
+        return this.prisma.schedule.delete({
+            where: {
+                id,
+            },
+        });
+    }
 }
