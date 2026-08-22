@@ -8,12 +8,14 @@ import {
 
 import { BackupsService } from './backups.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { BackupReportService } from '../notifications/reports/backup-report.service';
 
 @Controller('backups')
 export class BackupsController {
 
     constructor(
         private readonly backupsService: BackupsService,
+        private readonly backupReportService: BackupReportService,
     ) { }
 
     @Post('project/:id')
@@ -50,6 +52,15 @@ export class BackupsController {
         @Param('id') id: string,
     ) {
         return this.backupsService.findOne(id);
+    }
+
+    @Get('report')
+    async getReport(@Query('date') date?: string) {
+        const reportDate = date
+            ? new Date(`${date}T12:00:00`)
+            : new Date();
+
+        return this.backupReportService.generateReport(reportDate);
     }
 
 }

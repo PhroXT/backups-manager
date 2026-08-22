@@ -82,6 +82,24 @@ model User {
   email        String   @unique
   passwordHash String
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  notificationSettings NotificationSettings?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NotificationSettings {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  telegramEnabled Boolean @default(false)
+  telegramChatId  String?
+
+  reportEnabled Boolean @default(false)
+  reportTime    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

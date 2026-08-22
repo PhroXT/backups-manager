@@ -9,6 +9,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { BackupProcessor } from './backups.processor';
 import { PaginationModule } from '../common/pagination/pagination.module';
 import { BackupRecoveryService } from './backups-recovery.service';
+import { BackupReportService } from '../notifications/reports/backup-report.service';
 
 @Module({
     imports: [
@@ -28,6 +29,7 @@ import { BackupRecoveryService } from './backups-recovery.service';
         BackupRunnerService,
         BackupProcessor,
         BackupRecoveryService,
+        BackupReportService,
     ],
     exports: [
         BackupsService,
