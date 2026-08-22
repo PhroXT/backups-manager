@@ -7,7 +7,7 @@ import DataTable from "@/src/components/ui/DataTable";
 import Button from "@/src/components/ui/Button";
 import Badge from "@/src/components/ui/Badge";
 import Alert from "@/src/components/ui/Alert";
-import ProjectModal from "@/src/app/dashboard/projects/components/NewProjectModal";
+import ProjectModal from "@/src/app/(protected)/dashboard/projects/components/NewProjectModal";
 import { useState } from "react";
 import { Project } from "@/src/types/project";
 import { AlertState } from "@/src/types/Alert.type";
