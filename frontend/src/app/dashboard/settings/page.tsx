@@ -7,6 +7,7 @@ import Button from "@/src/components/ui/Button";
 import Alert from "@/src/components/ui/Alert";
 import PageHeader from "@/src/components/ui/PageHeader";
 import CreateUserModal from "@/src/components/settingsPage/CreateUserModal";
+import EditUserModal from "@/src/components/settingsPage/EditUserModal";
 
 type User = {
     id: string;
@@ -19,7 +20,10 @@ type User = {
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function SettingsPage() {
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [createModalOpen, setCreateModalOpen] = useState(false);
+
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -32,6 +36,11 @@ export default function SettingsPage() {
         title?: string;
         message?: string;
     } | null>(null);
+
+    function handleEditUser(user: User) {
+        setSelectedUser(user);
+        setEditModalOpen(true);
+    }
 
     async function loadUsers() {
         try {
@@ -118,9 +127,7 @@ export default function SettingsPage() {
             render: (user: User) => (
                 <Button
                     variant="secondary"
-                    onClick={() => {
-                        console.log("Edit user:", user);
-                    }}
+                    onClick={() => handleEditUser(user)}
                 >
                     Edit
                 </Button>
@@ -208,6 +215,32 @@ export default function SettingsPage() {
                     setAlert({
                         variant: "error",
                         title: "Unable to create user",
+                        message,
+                    });
+                }}
+            />
+
+            <EditUserModal
+                open={editModalOpen}
+                user={selectedUser}
+                onClose={() => {
+                    setEditModalOpen(false);
+                    setSelectedUser(null);
+                }}
+                onUpdated={async () => {
+                    await loadUsers();
+
+                    setAlert({
+                        variant: "success",
+                        title: "User updated",
+                        message:
+                            "The user was updated successfully.",
+                    });
+                }}
+                onError={(message) => {
+                    setAlert({
+                        variant: "error",
+                        title: "Unable to update user",
                         message,
                     });
                 }}
