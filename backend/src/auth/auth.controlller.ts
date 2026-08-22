@@ -11,8 +11,7 @@ import {
 import { Response, Request } from 'express';
 import { UsersService } from './users.service';
 import { SessionService } from './session.service';
-import { AuthGuard } from './auth.guard';
-import { Public } from './auth.module';
+import { Public } from './public.decorator';
 
 @Controller('auth')
 export class AuthController {
