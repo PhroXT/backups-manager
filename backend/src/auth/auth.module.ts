@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, SetMetadata } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from '../auth/auth.controlller';
 import { AuthGuard } from './auth.guard';
@@ -6,6 +6,10 @@ import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
+import { APP_GUARD } from '@nestjs/core';
+
+export const IS_PUBLIC_KEY = 'isPublic';
+export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
 @Module({
     imports: [PrismaModule],
@@ -15,6 +19,11 @@ import { UsersController } from './users.controller';
         SessionService,
         UsersService,
         AuthGuard,
+
+        {
+            provide: APP_GUARD,
+            useClass: AuthGuard,
+        },
     ],
     exports: [
         PasswordService,

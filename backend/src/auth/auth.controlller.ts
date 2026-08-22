@@ -12,6 +12,7 @@ import { Response, Request } from 'express';
 import { UsersService } from './users.service';
 import { SessionService } from './session.service';
 import { AuthGuard } from './auth.guard';
+import { Public } from './auth.module';
 
 @Controller('auth')
 export class AuthController {
@@ -21,7 +22,6 @@ export class AuthController {
     ) { }
 
     @Get('me')
-    @UseGuards(AuthGuard)
     me(@Req() request: Request) {
         return request.user;
     }
@@ -41,6 +41,7 @@ export class AuthController {
     }
 
     @Post('login')
+    @Public()
     async login(
         @Body()
         body: {

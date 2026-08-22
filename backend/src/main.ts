@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { BigIntInterceptor } from './common/interceptors/bigint.interceptor';
 import cookieParser from 'cookie-parser';
+import { AuthGuard } from './auth/auth.guard';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -27,6 +28,10 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(
     new BigIntInterceptor(),
+  );
+
+  app.useGlobalGuards(
+    app.get(AuthGuard),
   );
 
   app.use(cookieParser());
