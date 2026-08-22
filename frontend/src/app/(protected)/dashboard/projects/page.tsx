@@ -7,11 +7,10 @@ import DataTable from "@/src/components/ui/DataTable";
 import Button from "@/src/components/ui/Button";
 import Badge from "@/src/components/ui/Badge";
 import Alert from "@/src/components/ui/Alert";
-import ProjectModal from "@/src/app/(protected)/dashboard/projects/components/NewProjectModal";
+import ProjectModal from "@/src/app/(protected)/dashboard/projects/components/ProjectModal";
 import { useState } from "react";
 import { Project } from "@/src/types/project";
 import { AlertState } from "@/src/types/Alert.type";
-
 
 export default function ProjectsPage() {
     const table = useDataTable({
@@ -21,6 +20,7 @@ export default function ProjectsPage() {
     const [testing, setTesting] = useState<string | null>(null);
     const [running, setRunning] = useState<string | null>(null);
     const [open, setOpen] = useState(false);
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [alert, setAlert] = useState<AlertState>(null);
 
     async function testConnection(id: string) {
@@ -30,11 +30,11 @@ export default function ProjectsPage() {
             const result = await projectsService.testConnection(id);
 
             setAlert({
-                variant: result ? "success" : "error",
-                title: result ? "Conexión correcta" : "Conexión fallida",
-                message: result
-                    ? "La conexión ha sido probada correctamente."
-                    : "No se ha podido establecer la conexión.",
+                variant: result.success ? "success" : "error",
+                title: result.success
+                    ? "Conexión correcta"
+                    : "Conexión fallida",
+                message: result.message,
             });
         } catch {
             setAlert({
@@ -89,6 +89,17 @@ export default function ProjectsPage() {
             label: "Actions",
             render: (project: Project) => (
                 <div className="flex gap-2">
+
+                    <Button
+                        variant="secondary"
+                        onClick={() => {
+                            setSelectedProject(project);
+                            setOpen(true);
+                        }}
+                    >
+                        Edit
+                    </Button>
+
                     <Button
                         variant="secondary"
                         disabled={testing === project.id}
@@ -117,7 +128,13 @@ export default function ProjectsPage() {
                     description="Database connections configured for backups."
                 />
 
-                <Button variant="secondary" onClick={() => setOpen(true)}>
+                <Button
+                    variant="secondary"
+                    onClick={() => {
+                        setSelectedProject(null);
+                        setOpen(true);
+                    }}
+                >
                     New Project
                 </Button>
             </div>
@@ -141,7 +158,15 @@ export default function ProjectsPage() {
                 sort={table.sortProps}
             />
 
-            <ProjectModal open={open} onClose={() => setOpen(false)} />
+            <ProjectModal
+                open={open}
+                project={selectedProject}
+                onClose={() => {
+                    setOpen(false);
+                    setSelectedProject(null);
+                }}
+                onSaved={table.reload}
+            />
         </div>
     );
 }

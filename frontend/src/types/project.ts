@@ -7,4 +7,5 @@ export interface Project {
     database: string;
     username: string;
     enabled: boolean;
+    sslMode: string;
 }

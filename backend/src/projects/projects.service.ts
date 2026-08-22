@@ -4,6 +4,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { ConnectionService } from '../database/connection/connection.service';
 import { PaginationDto } from "../common/dto/pagination.dto";
 import { PaginationService } from '../common/pagination/pagination.service';
+import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -48,5 +49,12 @@ export class ProjectsService {
         }
 
         return this.connectionService.testPostgresConnection(project);
+    }
+
+    async update(id: string, data: UpdateProjectDto) {
+        return this.prisma.project.update({
+            where: { id },
+            data,
+        });
     }
 }

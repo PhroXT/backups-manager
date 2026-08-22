@@ -8,7 +8,10 @@ export const projectsService = {
     ...crud,
 
     testConnection(id: string) {
-        return apiFetch(
+        return apiFetch<{
+            success: boolean;
+            message: string;
+        }>(
             `/projects/${id}/test-connection`,
             {
                 method: "POST",

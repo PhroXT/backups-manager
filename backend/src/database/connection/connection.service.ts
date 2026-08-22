@@ -9,6 +9,7 @@ export class ConnectionService {
         database: string;
         username: string;
         password: string;
+        sslMode: string;
     }) {
         const client = new Client({
             host: config.host,
@@ -16,9 +17,12 @@ export class ConnectionService {
             database: config.database,
             user: config.username,
             password: config.password,
-            ssl: {
-                rejectUnauthorized: false,
-            },
+            ssl:
+                config.sslMode === "disable"
+                    ? false
+                    : {
+                        rejectUnauthorized: false,
+                    },
         });
 
         try {
