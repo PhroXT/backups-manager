@@ -10,6 +10,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { CommonModule } from "./common/common.module";
 import { AuthModule } from './auth/auth.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AuthModule } from './auth/auth.module';
     CommonModule,
     AuthModule,
     SchedulesModule,
+    NotificationsModule,
   ]
 })
 export class AppModule { }

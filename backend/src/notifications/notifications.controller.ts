@@ -5,6 +5,7 @@ import {
     Param,
     Patch,
 } from '@nestjs/common';
+
 import { NotificationsService } from './notifications.service';
 import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
 

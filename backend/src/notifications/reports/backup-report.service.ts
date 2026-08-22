@@ -139,19 +139,19 @@ export class BackupReportService {
         );
 
         return `
-                <b>BACKUP MANAGER</b>
+                <b>BACKUP MANAGER:</b>
 
-                <b>Resumen de actividad</b>
-                ${date}
+<b>Resumen de actividad</b>
+${date}
 
-                Programados: ${report.expected}
-                Backups encontrados: ${report.totalBackups}
+Programados: ${report.expected}
+Backups encontrados: ${report.totalBackups}
 
-                Completados: ${report.completed}
-                En ejecución: ${report.running}
-                Pendientes: ${report.pending}
-                Fallidos: ${report.failed}
-                Sin ejecución: ${report.missing}
-                    `.trim();
+Completados: ${report.completed}
+En ejecución: ${report.running}
+Pendientes: ${report.pending}
+Fallidos: ${report.failed}
+Sin ejecución: ${report.missing}
+`.trim();
     }
 }

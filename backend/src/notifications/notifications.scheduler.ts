@@ -16,7 +16,9 @@ export class NotificationsScheduler {
     async processReports() {
         const now = new Date();
 
-        const currentTime = now.toTimeString().slice(0, 5);
+        const currentTime = now
+            .toTimeString()
+            .slice(0, 5);
 
         const settings =
             await this.prisma.notificationSettings.findMany({
@@ -41,7 +43,7 @@ export class NotificationsScheduler {
                 reportDate,
             );
 
-        // No hubo schedules ayer.
+        // Si ayer no había schedules, no enviamos nada.
         if (report.expected === 0) {
             return;
         }

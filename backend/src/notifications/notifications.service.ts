@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from './telegram/telegram.service';
 import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
-import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class NotificationsService {
@@ -10,14 +10,12 @@ export class NotificationsService {
         private readonly telegramService: TelegramService,
     ) { }
 
-    async sendTelegramReport(
-        chatId: string,
-        message: string,
-    ): Promise<void> {
-        await this.telegramService.sendMessage(
-            chatId,
-            message,
-        );
+    async getSettings(userId: string) {
+        return this.prisma.notificationSettings.findUnique({
+            where: {
+                userId,
+            },
+        });
     }
 
     async updateSettings(
@@ -44,11 +42,13 @@ export class NotificationsService {
         });
     }
 
-    async getSettings(userId: string) {
-        return this.prisma.notificationSettings.findUnique({
-            where: {
-                userId,
-            },
-        });
+    async sendTelegramReport(
+        chatId: string,
+        message: string,
+    ): Promise<void> {
+        await this.telegramService.sendMessage(
+            chatId,
+            message,
+        );
     }
 }
