@@ -8,6 +8,7 @@ import Alert from "@/src/components/ui/Alert";
 import PageHeader from "@/src/components/ui/PageHeader";
 import CreateUserModal from "@/src/components/settingsPage/CreateUserModal";
 import EditUserModal from "@/src/components/settingsPage/EditUserModal";
+import ChangePasswordModal from "@/src/components/settingsPage/ChangePasswordModal";
 
 type User = {
     id: string;
@@ -20,6 +21,7 @@ type User = {
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function SettingsPage() {
+    const [passwordModalOpen, setPasswordModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -35,6 +37,7 @@ export default function SettingsPage() {
         variant: "success" | "error" | "info" | "warning";
         title?: string;
         message?: string;
+        durationMs?: number;
     } | null>(null);
 
     function handleEditUser(user: User) {
@@ -125,12 +128,24 @@ export default function SettingsPage() {
         {
             label: "Actions",
             render: (user: User) => (
-                <Button
-                    variant="secondary"
-                    onClick={() => handleEditUser(user)}
-                >
-                    Edit
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="secondary"
+                        onClick={() => handleEditUser(user)}
+                    >
+                        Edit
+                    </Button>
+
+                    <Button
+                        variant="secondary"
+                        onClick={() => {
+                            setSelectedUser(user);
+                            setPasswordModalOpen(true);
+                        }}
+                    >
+                        Password
+                    </Button>
+                </div>
             ),
         },
     ];
@@ -240,7 +255,33 @@ export default function SettingsPage() {
                 onError={(message) => {
                     setAlert({
                         variant: "error",
+                        durationMs: 2000,
                         title: "Unable to update user",
+                        message,
+                    });
+                }}
+            />
+
+            <ChangePasswordModal
+                open={passwordModalOpen}
+                user={selectedUser}
+                onClose={() => {
+                    setPasswordModalOpen(false);
+                    setSelectedUser(null);
+                }}
+                onUpdated={() => {
+                    setAlert({
+                        variant: "success",
+                        title: "Password changed",
+                        durationMs: 2000,
+                        message:
+                            "The password was changed successfully.",
+                    });
+                }}
+                onError={(message) => {
+                    setAlert({
+                        variant: "error",
+                        title: "Unable to change password",
                         message,
                     });
                 }}
