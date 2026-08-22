@@ -54,8 +54,9 @@ export default function Sidebar() {
 
             </nav>
             <footer>
-                <LogoutButton />
                 <ThemeButton />
+                <div className="mt-2"></div>
+                <LogoutButton />
             </footer>
         </aside>
     );

@@ -20,7 +20,7 @@ export default function LogoutButton() {
     return (
         <button
             onClick={logout}
-            className="w-full px-3 py-2 rounded text-left hover:bg-gray-800"
+            className="w-full px-3 py-2 mt-2 rounded text-left hover:bg-gray-800"
         >
             Logout
         </button>
