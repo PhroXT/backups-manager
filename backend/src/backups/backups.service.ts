@@ -7,6 +7,7 @@ import { PaginationService } from '../common/pagination/pagination.service';
 import { Prisma } from '@prisma/client';
 import { BackupExecutorService } from './backups-executor.service';
 import { StorageService } from '../storage/storage.service';
+import { AvailableBackupsQueryDto } from './dto/available-backups-query.dto';
 
 @Injectable()
 export class BackupsService {
@@ -247,35 +248,167 @@ export class BackupsService {
         });
     }
 
-    async findAvailableBackups() {
-        return this.prisma.project.findMany({
-            orderBy: {
-                name: 'asc',
+    async findAvailableBackupProjects(
+        query: AvailableBackupsQueryDto,
+    ) {
+        const page = query.page ?? 1;
+        const pageSize = query.pageSize ?? 25;
+        const search = query.search?.trim();
+
+        const where: Prisma.ProjectWhereInput = search
+            ? {
+                name: {
+                    contains: search,
+                    mode: 'insensitive',
+                },
+            }
+            : {};
+
+        const [projects, total] = await Promise.all([
+            this.prisma.project.findMany({
+                where,
+                orderBy: {
+                    name: 'asc',
+                },
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+                select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                },
+            }),
+
+            this.prisma.project.count({
+                where,
+            }),
+        ]);
+
+        const projectIds = projects.map(
+            (project) => project.id,
+        );
+
+        const backupCounts = projectIds.length
+            ? await this.prisma.backup.groupBy({
+                by: ['projectId'],
+                where: {
+                    projectId: {
+                        in: projectIds,
+                    },
+                    status: 'completed',
+                    filename: {
+                        not: null,
+                    },
+                },
+                _count: {
+                    _all: true,
+                },
+            })
+            : [];
+
+        const countMap = new Map(
+            backupCounts.map((item) => [
+                item.projectId,
+                item._count._all,
+            ]),
+        );
+
+        return {
+            data: projects.map((project) => ({
+                ...project,
+                backupCount:
+                    countMap.get(project.id) ?? 0,
+            })),
+
+            page,
+
+            pageSize,
+
+            total,
+
+            totalPages: Math.ceil(
+                total / pageSize,
+            ),
+        };
+    }
+
+    async findAvailableBackupsByProject(
+        projectId: string,
+        query: AvailableBackupsQueryDto,
+    ) {
+        const page = query.page ?? 1;
+        const pageSize = query.pageSize ?? 10;
+        const search = query.search?.trim();
+
+        const project = await this.prisma.project.findUnique({
+            where: {
+                id: projectId,
             },
             select: {
                 id: true,
                 name: true,
-                type: true,
-
-                backups: {
-                    where: {
-                        status: 'completed',
-                        filename: {
-                            not: null,
-                        },
-                    },
-                    orderBy: {
-                        createdAt: 'desc',
-                    },
-                    select: {
-                        id: true,
-                        filename: true,
-                        size: true,
-                        createdAt: true,
-                    },
-                },
             },
         });
+
+        if (!project) {
+            return null;
+        }
+
+        const where: Prisma.BackupWhereInput = {
+            projectId,
+            status: 'completed',
+            size: { gt: 0, },
+            filename: { not: null, },
+
+            ...(search
+                ? {
+                    filename: {
+                        contains: search,
+                        mode: 'insensitive',
+                    },
+                }
+                : {}),
+        };
+
+        const [backups, total] = await Promise.all([
+            this.prisma.backup.findMany({
+                where,
+                orderBy: {
+                    createdAt: 'desc',
+                },
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+                select: {
+                    id: true,
+                    filename: true,
+                    size: true,
+                    createdAt: true,
+                },
+            }),
+
+            this.prisma.backup.count({
+                where,
+            }),
+        ]);
+
+        return {
+            project,
+
+            data: backups.map((backup) => ({
+                ...backup,
+                size: backup.size?.toString() ?? null,
+            })),
+
+            page,
+
+            pageSize,
+
+            total,
+
+            totalPages: Math.ceil(
+                total / pageSize,
+            ),
+        };
     }
 
     async getDownloadUrl(id: string) {

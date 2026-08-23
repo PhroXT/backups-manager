@@ -10,6 +10,7 @@ import {
 import { BackupsService } from './backups.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { BackupReportService } from '../notifications/reports/backup-report.service';
+import { AvailableBackupsQueryDto } from './dto/available-backups-query.dto';
 
 @Controller('backups')
 export class BackupsController {
@@ -37,8 +38,23 @@ export class BackupsController {
     }
 
     @Get('available')
-    findAvailableBackups() {
-        return this.backupsService.findAvailableBackups();
+    findAvailableBackupProjects(
+        @Query() query: AvailableBackupsQueryDto,
+    ) {
+        return this.backupsService.findAvailableBackupProjects(
+            query,
+        );
+    }
+
+    @Get('project/:projectId/available')
+    findAvailableBackupsByProject(
+        @Param('projectId') projectId: string,
+        @Query() query: AvailableBackupsQueryDto,
+    ) {
+        return this.backupsService.findAvailableBackupsByProject(
+            projectId,
+            query,
+        );
     }
 
     @Get(':id/download')

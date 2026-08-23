@@ -21,5 +21,25 @@ export type AvailableBackupProject = {
     id: string;
     name: string;
     type: string;
-    backups: AvailableBackup[];
+    backupCount: number;
+};
+
+export type AvailableBackupProjectsResponse = {
+    data: AvailableBackupProject[];
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+};
+
+export type AvailableBackupsResponse = {
+    project: {
+        id: string;
+        name: string;
+    };
+    data: AvailableBackup[];
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
 };
