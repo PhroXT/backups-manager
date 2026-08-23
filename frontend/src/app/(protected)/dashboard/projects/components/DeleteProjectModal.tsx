@@ -77,7 +77,7 @@ export default function DeleteProjectModal({
                         <span className="font-semibold text-foreground">
                             {project?.name}
                         </span>
-                        ?
+                        ? Every asociated schedule will be deleted.
                     </p>
 
                     <p className="mt-2 text-sm text-muted">
@@ -86,13 +86,6 @@ export default function DeleteProjectModal({
                 </div>
 
                 <div className="space-y-2">
-                    <p className="text-sm text-muted">
-                        Type{" "}
-                        <span className="font-semibold text-foreground">
-                            delete
-                        </span>{" "}
-                        to confirm.
-                    </p>
 
                     <div className="space-y-2">
                         <p className="text-sm text-muted">
@@ -110,6 +103,14 @@ export default function DeleteProjectModal({
                             autoComplete="current-password"
                         />
                     </div>
+
+                    <p className="text-sm text-muted">
+                        Also, type{" "}
+                        <span className="font-semibold text-foreground">
+                            delete
+                        </span>{" "}
+                        to confirm.
+                    </p>
 
                     <input
                         type="text"
