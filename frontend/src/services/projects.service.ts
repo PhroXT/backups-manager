@@ -27,4 +27,17 @@ export const projectsService = {
             }
         );
     },
+
+    deleteWithPassword(id: string, password: string) {
+        return apiFetch(
+            `/projects/${id}`,
+            {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ password }),
+            },
+        );
+    },
 };

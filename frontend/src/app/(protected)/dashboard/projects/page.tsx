@@ -11,6 +11,7 @@ import ProjectModal from "@/src/app/(protected)/dashboard/projects/components/Pr
 import { useState } from "react";
 import { Project } from "@/src/types/project";
 import { AlertState } from "@/src/types/Alert.type";
+import DeleteProjectModal from "./components/DeleteProjectModal";
 
 export default function ProjectsPage() {
     const table = useDataTable({
@@ -22,6 +23,7 @@ export default function ProjectsPage() {
     const [open, setOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [alert, setAlert] = useState<AlertState>(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
     async function testConnection(id: string) {
         setTesting(id);
@@ -115,6 +117,16 @@ export default function ProjectsPage() {
                     >
                         {running === project.id ? "Running..." : "Run Backup"}
                     </Button>
+
+                    <Button
+                        variant="danger"
+                        onClick={() => {
+                            setSelectedProject(project);
+                            setDeleteModalOpen(true);
+                        }}
+                    >
+                        Delete
+                    </Button>
                 </div>
             ),
         },
@@ -166,6 +178,31 @@ export default function ProjectsPage() {
                     setSelectedProject(null);
                 }}
                 onSaved={table.reload}
+            />
+
+            <DeleteProjectModal
+                open={deleteModalOpen}
+                project={selectedProject}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setSelectedProject(null);
+                }}
+                onDeleted={async () => {
+                    await table.reload();
+
+                    setAlert({
+                        variant: "success",
+                        title: "Project deleted",
+                        message: "The project was deleted successfully.",
+                    });
+                }}
+                onError={(message) => {
+                    setAlert({
+                        variant: "error",
+                        title: "Unable to delete project",
+                        message,
+                    });
+                }}
             />
         </div>
     );

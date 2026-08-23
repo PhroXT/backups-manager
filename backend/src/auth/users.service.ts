@@ -212,4 +212,10 @@ export class UsersService {
             success: true,
         };
     }
+
+    async findByIdWithPassword(id: string) {
+        return this.prisma.user.findUnique({
+            where: { id },
+        });
+    }
 }

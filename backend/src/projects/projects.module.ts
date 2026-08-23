@@ -4,9 +4,10 @@ import { ProjectsController } from './projects.controller';
 import { CommonModule } from "../common/common.module";
 import { ConnectionModule } from '../database/connection/connection.module';
 import { PaginationModule } from '../common/pagination/pagination.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [CommonModule, ConnectionModule, PaginationModule],
+  imports: [CommonModule, ConnectionModule, PaginationModule, AuthModule],
   controllers: [ProjectsController],
   providers: [ProjectsService],
 })

@@ -32,6 +32,7 @@ export class BackupExecutorService {
         return true;
     }
 
+
     async execute(
         backupId: string,
         attemptsMade = 0,
@@ -49,6 +50,12 @@ export class BackupExecutorService {
 
         if (!backup) {
             throw new Error('Backup not found');
+        }
+
+        if (!backup.project) {
+            throw new Error(
+                'Cannot execute backup: project no longer exists',
+            );
         }
 
         if (backup.status === 'completed') {
