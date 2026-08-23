@@ -1,6 +1,10 @@
 "use client";
 
-import { AvailableBackup, AvailableBackupProject as Project } from "@/src/types/backup";
+import { useEffect, useRef } from "react";
+import {
+    AvailableBackup,
+    AvailableBackupProject as Project,
+} from "@/src/types/backup";
 import { formatBytes, formatDate } from "@/src/lib/format";
 import Button from "@/src/components/ui/Button";
 
@@ -37,8 +41,62 @@ export default function AvailableBackupProject({
 
     const backupData = backups?.data ?? [];
 
+    useEffect(() => {
+        if (!backups?.loaded || backups.loading) {
+            return;
+        }
+
+        const key =
+            `backup-project-scroll-${project.id}`;
+
+        const savedPosition =
+            sessionStorage.getItem(key);
+
+        if (savedPosition === null) {
+            return;
+        }
+
+        sessionStorage.removeItem(key);
+
+        requestAnimationFrame(() => {
+            window.scrollTo({
+                top: Number(savedPosition),
+                behavior: "instant",
+            });
+        });
+
+    }, [
+        backups?.page,
+        backups?.loaded,
+        backups?.loading,
+        project.id,
+    ]);
+
+    const projectRef = useRef<HTMLDivElement>(null);
+
+    const handleBackupPageChange = (page: number) => {
+        if (!projectRef.current) {
+            onBackupPageChange(page);
+            return;
+        }
+
+        const top =
+            projectRef.current.getBoundingClientRect().top +
+            window.scrollY;
+
+        sessionStorage.setItem(
+            `backup-project-scroll-${project.id}`,
+            String(top),
+        );
+
+        onBackupPageChange(page);
+    };
+
     return (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div
+            ref={projectRef}
+            className="rounded-lg border border-border bg-card overflow-hidden"
+        >
 
             <button
                 type="button"
@@ -147,6 +205,7 @@ export default function AvailableBackupProject({
                                                 ? "Preparing..."
                                                 : "Download"}
                                         </Button>
+
                                     </div>
                                 ))}
 
@@ -156,17 +215,19 @@ export default function AvailableBackupProject({
                                         <button
                                             disabled={backups.page === 1}
                                             onClick={() =>
-                                                onBackupPageChange(backups.page - 1)
+                                                handleBackupPageChange(
+                                                    backups.page - 1
+                                                )
                                             }
                                             className="
-                rounded
-                border
-                border-border
-                px-3
-                py-1
-                text-sm
-                disabled:opacity-50
-            "
+                                                rounded
+                                                border
+                                                border-border
+                                                px-3
+                                                py-1
+                                                text-sm
+                                                disabled:opacity-50
+                                            "
                                         >
                                             Previous
                                         </button>
@@ -180,17 +241,19 @@ export default function AvailableBackupProject({
                                                 backups.page === backups.totalPages
                                             }
                                             onClick={() =>
-                                                onBackupPageChange(backups.page + 1)
+                                                handleBackupPageChange(
+                                                    backups.page + 1
+                                                )
                                             }
                                             className="
-                rounded
-                border
-                border-border
-                px-3
-                py-1
-                text-sm
-                disabled:opacity-50
-            "
+                                                rounded
+                                                border
+                                                border-border
+                                                px-3
+                                                py-1
+                                                text-sm
+                                                disabled:opacity-50
+                                            "
                                         >
                                             Next
                                         </button>

@@ -296,6 +296,7 @@ export class BackupsService {
                         in: projectIds,
                     },
                     status: 'completed',
+                    size: { gt: 0, },
                     filename: {
                         not: null,
                     },

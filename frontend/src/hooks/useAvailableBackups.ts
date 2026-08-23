@@ -56,6 +56,7 @@ export function useAvailableBackups() {
      * Debounce del buscador
      */
     useEffect(() => {
+
         const timeout = setTimeout(() => {
             setDebouncedSearch(search);
         }, 350);
@@ -63,6 +64,7 @@ export function useAvailableBackups() {
         return () => {
             clearTimeout(timeout);
         };
+
     }, [search]);
 
 
@@ -71,13 +73,14 @@ export function useAvailableBackups() {
      */
     const loadProjects = useCallback(
         async (
-            page: number = 1,
-            currentSearch: string = debouncedSearch,
+            page = 1,
+            currentSearch = debouncedSearch,
         ) => {
 
             setLoadingProjects(true);
 
             try {
+
                 const response =
                     await backupsService.getAvailableProjects({
                         page,
@@ -95,8 +98,11 @@ export function useAvailableBackups() {
                 });
 
             } finally {
+
                 setLoadingProjects(false);
+
             }
+
         },
         [
             projectPagination.pageSize,
@@ -106,11 +112,13 @@ export function useAvailableBackups() {
 
 
     /*
-     * Cuando termina el debounce,
-     * volvemos a la página 1.
+     * Cuando cambia la búsqueda,
+     * volvemos a la primera página.
      */
     useEffect(() => {
+
         loadProjects(1, debouncedSearch);
+
     }, [
         debouncedSearch,
         loadProjects,
@@ -119,6 +127,10 @@ export function useAvailableBackups() {
 
     /*
      * Carga de backups de un proyecto
+     *
+     * Importante:
+     * No dependemos de projectBackups aquí.
+     * Utilizamos el estado anterior directamente.
      */
     const loadProjectBackups = useCallback(
         async (
@@ -126,21 +138,31 @@ export function useAvailableBackups() {
             page = 1,
         ) => {
 
-            const previous =
-                projectBackups[projectId];
+            let pageSize = 10;
 
-            setProjectBackups((current) => ({
-                ...current,
-                [projectId]: {
-                    data: previous?.data ?? [],
-                    page: previous?.page ?? 1,
-                    pageSize: previous?.pageSize ?? 10,
-                    total: previous?.total ?? 0,
-                    totalPages: previous?.totalPages ?? 0,
-                    loading: true,
-                    loaded: previous?.loaded ?? false,
-                },
-            }));
+            setProjectBackups((current) => {
+
+                const previous =
+                    current[projectId];
+
+                pageSize =
+                    previous?.pageSize ?? 10;
+
+                return {
+                    ...current,
+
+                    [projectId]: {
+                        data: previous?.data ?? [],
+                        page: previous?.page ?? 1,
+                        pageSize,
+                        total: previous?.total ?? 0,
+                        totalPages: previous?.totalPages ?? 0,
+                        loading: true,
+                        loaded: previous?.loaded ?? false,
+                    },
+                };
+
+            });
 
             try {
 
@@ -149,13 +171,13 @@ export function useAvailableBackups() {
                         projectId,
                         {
                             page,
-                            pageSize:
-                                previous?.pageSize ?? 10,
+                            pageSize,
                         },
                     );
 
                 setProjectBackups((current) => ({
                     ...current,
+
                     [projectId]: {
                         data: response.data,
                         page: response.page,
@@ -169,24 +191,33 @@ export function useAvailableBackups() {
 
             } catch (error) {
 
-                setProjectBackups((current) => ({
-                    ...current,
-                    [projectId]: {
-                        data: [],
-                        page: 1,
-                        pageSize:
-                            previous?.pageSize ?? 10,
-                        total: 0,
-                        totalPages: 0,
-                        loading: false,
-                        loaded: false,
-                    },
-                }));
+                setProjectBackups((current) => {
+
+                    const previous =
+                        current[projectId];
+
+                    return {
+                        ...current,
+
+                        [projectId]: {
+                            data: [],
+                            page: 1,
+                            pageSize:
+                                previous?.pageSize ?? pageSize,
+                            total: 0,
+                            totalPages: 0,
+                            loading: false,
+                            loaded: false,
+                        },
+                    };
+
+                });
 
                 throw error;
             }
+
         },
-        [projectBackups],
+        [],
     );
 
 
@@ -197,7 +228,9 @@ export function useAvailableBackups() {
         async (projectId: string) => {
 
             if (expandedProject === projectId) {
+
                 setExpandedProject(null);
+
                 return;
             }
 
@@ -207,11 +240,14 @@ export function useAvailableBackups() {
                 projectBackups[projectId];
 
             if (!state?.loaded) {
+
                 await loadProjectBackups(
                     projectId,
                     1,
                 );
+
             }
+
         },
         [
             expandedProject,
@@ -226,10 +262,12 @@ export function useAvailableBackups() {
      */
     const changeProjectPage = useCallback(
         async (page: number) => {
+
             await loadProjects(
                 page,
                 debouncedSearch,
             );
+
         },
         [
             loadProjects,
@@ -246,10 +284,12 @@ export function useAvailableBackups() {
             projectId: string,
             page: number,
         ) => {
+
             await loadProjectBackups(
                 projectId,
                 page,
             );
+
         },
         [loadProjectBackups],
     );
@@ -274,8 +314,11 @@ export function useAvailableBackups() {
                     response.url;
 
             } finally {
+
                 setDownloading(null);
+
             }
+
         },
         [],
     );
