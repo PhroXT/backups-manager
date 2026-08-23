@@ -68,7 +68,7 @@ export class StorageService implements OnModuleInit {
             size: object.size,
         };
     }
-    
+
     async deleteFile(
         bucket: string,
         objectName: string,
@@ -78,4 +78,36 @@ export class StorageService implements OnModuleInit {
             objectName,
         );
     }
+
+    async fileExists(
+        bucket: string,
+        objectName: string,
+    ): Promise<boolean> {
+
+        try {
+            await this.client.statObject(
+                bucket,
+                objectName,
+            );
+
+            return true;
+
+        } catch (error) {
+
+            return false;
+        }
+    }
+
+    async getDownloadUrl(
+        bucket: string,
+        objectName: string,
+        expiry = 60 * 10,
+    ) {
+        return this.client.presignedGetObject(
+            bucket,
+            objectName,
+            expiry,
+        );
+    }
+
 }

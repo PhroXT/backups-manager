@@ -1,5 +1,24 @@
 import { createCrudService } from "./createCrudService";
-import { Backup } from "@/src/types/backup";
+import { Backup, AvailableBackupProject } from "@/src/types/backup";
+import { apiFetch } from "@/src/lib/api";
 
-export const backupsService =
-    createCrudService<Backup>("backups");
+const crud = createCrudService<Backup>("backups");
+
+export const backupsService = {
+    ...crud,
+
+    async getAvailableBackups() {
+        return apiFetch<AvailableBackupProject[]>(
+            "/backups/available"
+        );
+    },
+
+    async getDownloadUrl(id: string) {
+        return apiFetch<{
+            filename: string;
+            url: string;
+        }>(
+            `/backups/${id}/download`
+        );
+    },
+};

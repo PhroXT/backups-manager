@@ -9,3 +9,17 @@ export interface Backup {
         name: string;
     };
 }
+
+export type AvailableBackup = {
+    id: string;
+    filename: string;
+    size: string | null;
+    createdAt: string;
+};
+
+export type AvailableBackupProject = {
+    id: string;
+    name: string;
+    type: string;
+    backups: AvailableBackup[];
+};

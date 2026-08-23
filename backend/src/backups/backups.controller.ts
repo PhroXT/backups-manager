@@ -4,6 +4,7 @@ import {
     Post,
     Param,
     Query,
+    NotFoundException,
 } from '@nestjs/common';
 
 import { BackupsService } from './backups.service';
@@ -33,6 +34,26 @@ export class BackupsController {
         @Param('id') id: string,
     ) {
         return this.backupsService.cancel(id);
+    }
+
+    @Get('available')
+    findAvailableBackups() {
+        return this.backupsService.findAvailableBackups();
+    }
+
+    @Get(':id/download')
+    async download(@Param('id') id: string) {
+
+        const result =
+            await this.backupsService.getDownloadUrl(id);
+
+        if (!result) {
+            throw new NotFoundException(
+                'Backup not found or unavailable',
+            );
+        }
+
+        return result;
     }
 
     @Get()

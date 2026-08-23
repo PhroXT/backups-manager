@@ -6,6 +6,7 @@ import { Queue } from 'bullmq';
 import { PaginationService } from '../common/pagination/pagination.service';
 import { Prisma } from '@prisma/client';
 import { BackupExecutorService } from './backups-executor.service';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class BackupsService {
@@ -16,6 +17,7 @@ export class BackupsService {
         @InjectQueue('backups')
         private backupsQueue: Queue,
         private readonly executor: BackupExecutorService,
+        private readonly storage: StorageService,
     ) { }
 
     async create(
@@ -244,4 +246,80 @@ export class BackupsService {
             },
         });
     }
+
+    async findAvailableBackups() {
+        return this.prisma.project.findMany({
+            orderBy: {
+                name: 'asc',
+            },
+            select: {
+                id: true,
+                name: true,
+                type: true,
+
+                backups: {
+                    where: {
+                        status: 'completed',
+                        filename: {
+                            not: null,
+                        },
+                    },
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                    select: {
+                        id: true,
+                        filename: true,
+                        size: true,
+                        createdAt: true,
+                    },
+                },
+            },
+        });
+    }
+
+    async getDownloadUrl(id: string) {
+
+        const backup = await this.prisma.backup.findUnique({
+            where: {
+                id,
+            },
+            select: {
+                id: true,
+                filename: true,
+                status: true,
+            },
+        });
+
+        if (!backup) {
+            return null;
+        }
+
+        if (
+            backup.status !== 'completed' ||
+            !backup.filename
+        ) {
+            return null;
+        }
+
+        const exists = await this.storage.fileExists(
+            'backups',
+            backup.filename,
+        );
+
+        if (!exists) {
+            return null;
+        }
+
+        const url = await this.storage.getDownloadUrl(
+            'backups',
+            backup.filename,
+        );
+
+        return {
+            filename: backup.filename,
+            url,
+        };
+    }
+
 }
