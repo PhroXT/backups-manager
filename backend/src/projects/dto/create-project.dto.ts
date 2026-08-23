@@ -5,7 +5,7 @@ export class CreateProjectDto {
     name: string;
 
     @IsString()
-    type: string; // postgres
+    type: string;
 
     @IsString()
     host: string;
@@ -21,6 +21,10 @@ export class CreateProjectDto {
 
     @IsString()
     password: string;
+
+    @IsOptional()
+    @IsString()
+    sslMode?: string;
 
     @IsOptional()
     @IsBoolean()

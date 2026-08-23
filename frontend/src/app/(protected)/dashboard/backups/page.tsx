@@ -16,8 +16,9 @@ export default function BackupsPage() {
 
     const columns = [
         {
-            label: "Project", key: "name" as keyof Backup,
-            render: (backup: Backup) => backup.project.name,
+            label: "Project",
+            key: "name" as keyof Backup,
+            render: (backup: Backup) => backup.project?.name ?? "—",
         },
         {
             label: "File",
