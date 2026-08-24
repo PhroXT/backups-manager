@@ -18,67 +18,28 @@ export class BackupRunnerService {
             `/backup/${filename}`,
         ];
 
-        console.log(
-            '[pg_restore] START',
-            {
-                filename,
-            },
-        );
-
         return new Promise((resolve, reject) => {
 
             const child = spawn('docker', args);
 
             let stderr = '';
 
-            // IMPORTANTE:
-            // pg_restore --list escribe una gran cantidad de información
-            // en stdout. Consumimos el stream para evitar que el buffer
-            // de stdout se llene y bloquee el proceso.
             child.stdout.resume();
 
             child.stderr.on('data', (data: Buffer) => {
 
                 stderr += data.toString();
 
-                console.error(
-                    '[pg_restore stderr]',
-                    data.toString().trim(),
-                );
             });
 
             child.on('error', (error) => {
-
-                console.error(
-                    '[pg_restore] ERROR',
-                    {
-                        filename,
-                        error,
-                    },
-                );
 
                 reject(error);
             });
 
             child.on('close', (code, signal) => {
 
-                console.log(
-                    '[pg_restore] CLOSE',
-                    {
-                        filename,
-                        code,
-                        signal,
-                    },
-                );
-
                 if (code === 0) {
-
-                    console.log(
-                        '[pg_restore] SUCCESS',
-                        {
-                            filename,
-                        },
-                    );
 
                     resolve();
                     return;
@@ -135,16 +96,6 @@ export class BackupRunnerService {
                 config.filename,
             );
 
-            console.log(
-                'Ejecutando pg_dump:',
-                {
-                    host: config.host,
-                    database: config.database,
-                    username: config.username,
-                    filename: config.filename,
-                },
-            );
-
             const startedAt = Date.now();
 
             const child = spawn('docker', args);
@@ -161,17 +112,12 @@ export class BackupRunnerService {
                 try {
                     const stats = await fs.promises.stat(file);
 
-                    //console.log(
-                    //     `[backup progress] ${stats.size} bytes`,
-                    //   );
-
                     config.onProgress?.({
                         bytes: stats.size,
                         elapsedMs: Date.now() - startedAt,
                     });
 
                 } catch {
-                    console.log('[backup progress] file not available yet');
                 }
 
             }, 10000);
@@ -180,10 +126,6 @@ export class BackupRunnerService {
 
                 stderr += data.toString();
 
-                console.error(
-                    '[pg_dump]',
-                    data.toString().trim(),
-                );
             });
 
             child.on('error', (error) => {
@@ -198,24 +140,9 @@ export class BackupRunnerService {
             });
 
             child.on('exit', (code, signal) => {
-                console.log(
-                    `[pg_dump] EXIT backup=${config.backupId}`,
-                    {
-                        code,
-                        signal,
-                    },
-                );
             });
 
             child.on('close', (code, signal) => {
-
-                console.log(
-                    `[pg_dump] CLOSE backup=${config.backupId}`,
-                    {
-                        code,
-                        signal,
-                    },
-                );
 
                 clearInterval(progressInterval);
 
