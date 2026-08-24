@@ -3,6 +3,8 @@ import { spawn, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const PG_DUMP_INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+
 @Injectable()
 export class BackupRunnerService {
 
@@ -27,20 +29,16 @@ export class BackupRunnerService {
             child.stdout.resume();
 
             child.stderr.on('data', (data: Buffer) => {
-
                 stderr += data.toString();
-
             });
 
             child.on('error', (error) => {
-
                 reject(error);
             });
 
-            child.on('close', (code, signal) => {
+            child.on('close', (code) => {
 
                 if (code === 0) {
-
                     resolve();
                     return;
                 }
@@ -106,21 +104,116 @@ export class BackupRunnerService {
             );
 
             let stderr = '';
+            let lastSize = 0;
+            let lastProgressAt = Date.now();
+            let settled = false;
 
-            const progressInterval = setInterval(async () => {
+            const cleanup = () => {
+
+                clearInterval(progressInterval);
+
+                this.processes.delete(
+                    config.backupId,
+                );
+            };
+
+            const terminate = async (): Promise<void> => {
 
                 try {
-                    const stats = await fs.promises.stat(file);
 
-                    config.onProgress?.({
-                        bytes: stats.size,
-                        elapsedMs: Date.now() - startedAt,
+                    const killer = spawn(
+                        'docker',
+                        [
+                            'exec',
+                            'backups-manager-tools',
+                            'pkill',
+                            '-TERM',
+                            '-f',
+                            config.filename,
+                        ],
+                    );
+
+                    await new Promise<void>((resolve) => {
+
+                        killer.on('close', () => {
+                            resolve();
+                        });
+
+                        killer.on('error', () => {
+                            resolve();
+                        });
                     });
 
                 } catch {
                 }
+            };
 
-            }, 10000);
+            const progressInterval = setInterval(
+                async () => {
+
+                    if (settled) {
+                        return;
+                    }
+
+                    try {
+
+                        const stats =
+                            await fs.promises.stat(file);
+
+                        const now = Date.now();
+                        const currentSize = stats.size;
+
+                        if (currentSize > lastSize) {
+
+                            lastSize = currentSize;
+                            lastProgressAt = now;
+
+                        }
+
+                        config.onProgress?.({
+                            bytes: currentSize,
+                            elapsedMs:
+                                now - startedAt,
+                        });
+
+                        const inactiveFor =
+                            now - lastProgressAt;
+
+                        if (
+                            inactiveFor >=
+                            PG_DUMP_INACTIVITY_TIMEOUT_MS
+                        ) {
+
+                            settled = true;
+
+                            cleanup();
+
+                            console.error(
+                                `[pg_dump] INACTIVITY TIMEOUT backup=${config.backupId}`,
+                                {
+                                    inactiveForMs:
+                                        inactiveFor,
+                                    lastSize,
+                                    filename:
+                                        config.filename,
+                                },
+                            );
+
+                            await terminate();
+
+                            reject(
+                                new Error(
+                                    `pg_dump stopped after ${PG_DUMP_INACTIVITY_TIMEOUT_MS / 60000} minutes without progress`,
+                                ),
+                            );
+                        }
+
+                    } catch {
+                    }
+
+                },
+                10000,
+            );
 
             child.stderr.on('data', (data: Buffer) => {
 
@@ -130,25 +223,38 @@ export class BackupRunnerService {
 
             child.on('error', (error) => {
 
-                clearInterval(progressInterval);
+                if (settled) {
+                    return;
+                }
 
-                this.processes.delete(
-                    config.backupId,
-                );
+                settled = true;
+
+                cleanup();
 
                 reject(error);
             });
 
             child.on('exit', (code, signal) => {
+
+                console.log(
+                    `[pg_dump] EXIT backup=${config.backupId}`,
+                    {
+                        code,
+                        signal,
+                    },
+                );
+
             });
 
             child.on('close', (code, signal) => {
 
-                clearInterval(progressInterval);
+                if (settled) {
+                    return;
+                }
 
-                this.processes.delete(
-                    config.backupId,
-                );
+                settled = true;
+
+                cleanup();
 
                 if (code === 0) {
 
@@ -163,7 +269,9 @@ export class BackupRunnerService {
                 reject(
                     new Error(
                         stderr.trim() ||
-                        `pg_dump exited with code ${code}`,
+                        `pg_dump exited with code ${code}${signal
+                            ? ` by signal ${signal}`
+                            : ''}`,
                     ),
                 );
             });
@@ -180,18 +288,19 @@ export class BackupRunnerService {
 
         const filename = `${backupId}.dump`;
 
-        const args = [
-            'exec',
-            'backups-manager-tools',
-            'pkill',
-            '-TERM',
-            '-f',
-            filename,
-        ];
-
         await new Promise<void>((resolve, reject) => {
 
-            const killer = spawn('docker', args);
+            const killer = spawn(
+                'docker',
+                [
+                    'exec',
+                    'backups-manager-tools',
+                    'pkill',
+                    '-TERM',
+                    '-f',
+                    filename,
+                ],
+            );
 
             killer.on('error', reject);
 
