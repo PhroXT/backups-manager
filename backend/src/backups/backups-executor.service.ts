@@ -4,7 +4,6 @@ import * as path from 'path';
 import { StorageService } from '../storage/storage.service';
 import { BackupRunnerService } from './backups-runner.service';
 import { PrismaService } from '../prisma/prisma.service';
-//import { BackupsService } from './backups.service';
 
 @Injectable()
 export class BackupExecutorService {
@@ -15,7 +14,6 @@ export class BackupExecutorService {
         private readonly storage: StorageService,
         private readonly runner: BackupRunnerService,
         private readonly prisma: PrismaService,
-        //private readonly backupsService: BackupsService,
     ) { }
 
     async cancel(backupId: string): Promise<boolean> {

@@ -50,15 +50,6 @@ export class SchedulerService {
                         );
                     }
 
-                    await this.backupsService.create(
-                        schedule.projectId,
-                        retention,
-                    );
-
-                    await this.backupsService.create(
-                        schedule.projectId,
-                        retention,
-                    );
                 }
             } catch (error) {
 
