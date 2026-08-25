@@ -49,7 +49,7 @@ export default function LoginPage() {
     return (
         <main className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
             <div className="w-full max-w-md rounded-lg bg-white dark:bg-gray-950 p-8 shadow">
-                <h1 className="text-2xl font-bold mb-6">
+                <h1 className="text-2xl font-bold mb-6 text-center">
                     Backup Manager
                 </h1>
 

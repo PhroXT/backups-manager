@@ -11,8 +11,7 @@ export class BackupRecoveryService {
         new Logger(BackupRecoveryService.name);
 
     private readonly recoveryThresholdMs =
-        //60 * 60 * 1000;
-        5 * 1000;
+        5 * 60 * 1000;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -21,7 +20,7 @@ export class BackupRecoveryService {
         private readonly backupsQueue: Queue,
     ) { }
 
-    @Cron('*/10 * * * *')
+    @Cron('* * * * *')
     async recoverAbandonedBackups() {
 
         const threshold =
@@ -33,10 +32,20 @@ export class BackupRecoveryService {
         const backups =
             await this.prisma.backup.findMany({
                 where: {
-                    status: 'running',
-                    startedAt: {
-                        lt: threshold,
-                    },
+                    OR: [
+                        {
+                            status: 'pending',
+                            createdAt: {
+                                lt: threshold,
+                            },
+                        },
+                        {
+                            status: 'running',
+                            startedAt: {
+                                lt: threshold,
+                            },
+                        },
+                    ],
                 },
             });
 
@@ -44,34 +53,55 @@ export class BackupRecoveryService {
 
             try {
 
-                const jobs =
-                    await this.backupsQueue.getJobs([
-                        'active',
-                        'waiting',
-                        'delayed',
-                    ]);
+                const jobId =
+                    `backup-${backup.id}`;
 
                 const existingJob =
-                    jobs.find(
-                        job =>
-                            job.data?.backupId === backup.id,
+                    await this.backupsQueue.getJob(
+                        jobId,
                     );
 
                 if (existingJob) {
-                    continue;
+
+                    const state =
+                        await existingJob.getState();
+
+                    if (
+                        state === 'active' ||
+                        state === 'waiting' ||
+                        state === 'delayed'
+                    ) {
+                        continue;
+                    }
+
+                    if (state === 'failed') {
+                        await existingJob.remove();
+                    }
                 }
 
-                await this.prisma.backup.update({
-                    where: {
-                        id: backup.id,
-                    },
-                    data: {
-                        status: 'pending',
-                        errorMessage:
-                            'Backup recovered after an interrupted execution',
-                        finishedAt: null,
-                    },
-                });
+                const updated =
+                    await this.prisma.backup.updateMany({
+                        where: {
+                            id: backup.id,
+                            status: {
+                                in: [
+                                    'pending',
+                                    'running',
+                                ],
+                            },
+                        },
+                        data: {
+                            status: 'pending',
+                            errorMessage:
+                                'Backup recovered after an interrupted execution',
+                            startedAt: null,
+                            finishedAt: null,
+                        },
+                    });
+
+                if (updated.count === 0) {
+                    continue;
+                }
 
                 await this.backupsQueue.add(
                     'backup',
@@ -79,7 +109,7 @@ export class BackupRecoveryService {
                         backupId: backup.id,
                     },
                     {
-                        jobId: `backup-${backup.id}`,
+                        jobId,
 
                         attempts: 3,
 

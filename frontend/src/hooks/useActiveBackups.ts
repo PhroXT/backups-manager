@@ -1,32 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/src/lib/api';
-
 
 export type ActiveBackup = {
     id: string;
     status: string;
-
     startedAt: string | null;
     lastActivityAt: string | null;
     lastActivitySize: string | null;
-
     createdAt: string;
-
     project: {
         id: string;
         name: string;
     };
 };
 
-
 export function useActiveBackups() {
 
     const [backups, setBackups] = useState<ActiveBackup[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const loadingRef = useRef(false);
+
     async function load() {
+
+        if (loadingRef.current) {
+            return;
+        }
+
+        loadingRef.current = true;
 
         try {
 
@@ -38,10 +41,10 @@ export function useActiveBackups() {
 
         } finally {
 
+            loadingRef.current = false;
             setLoading(false);
 
         }
-
     }
 
     async function cancelBackup(id: string) {
@@ -60,12 +63,14 @@ export function useActiveBackups() {
 
         load();
 
-        const interval = setInterval(load, 5000);
+        const interval = setInterval(
+            load,
+            5000,
+        );
 
         return () => clearInterval(interval);
 
     }, []);
-
 
     return {
         backups,

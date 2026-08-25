@@ -151,9 +151,12 @@ export default function ActiveBackups() {
                                     <div className="ml-auto">
                                         <Button
                                             variant="danger"
+                                            disabled={cancelling}
                                             onClick={() => setBackupToCancel(backup.id)}
                                         >
-                                            Cancel
+                                            {cancelling && backupToCancel === backup.id
+                                                ? 'Cancelling...'
+                                                : 'Cancel'}
                                         </Button>
                                     </div>
 
