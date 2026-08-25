@@ -5,6 +5,17 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import ThemeButton from "../ui/theme-button";
 import LogoutButton from "../auth/logout-button";
+import {
+    LayoutDashboard,
+    FolderKanban,
+    CalendarClock,
+    DatabaseBackup,
+    History,
+    Archive,
+    Settings,
+    ChevronDown,
+    ChevronRight,
+} from "lucide-react";
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -51,11 +62,15 @@ export default function Sidebar() {
                     <Link
                         key={link.href}
                         href={link.href}
-                        className={`px-3 py-2 rounded ${isActive(link.href)
+                        className={`px-3 py-2 rounded flex items-center gap-3 ${isActive(link.href)
                             ? "bg-gray-700"
                             : "hover:bg-gray-800"
                             }`}
                     >
+                        {link.name === "Dashboard" && <LayoutDashboard size={18} />}
+                        {link.name === "Projects" && <FolderKanban size={18} />}
+                        {link.name === "Schedules" && <CalendarClock size={18} />}
+
                         {link.name}
                     </Link>
                 ))}
@@ -65,21 +80,21 @@ export default function Sidebar() {
 
                     <button
                         type="button"
-                        onClick={() =>
-                            setBackupsOpen((open) => !open)
-                        }
+                        onClick={() => setBackupsOpen((open) => !open)}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded ${isBackupsSection
                             ? "bg-gray-700"
                             : "hover:bg-gray-800"
                             }`}
                     >
-                        <span>
+                        <span className="flex items-center gap-3">
+                            <DatabaseBackup size={18} />
                             Backups
                         </span>
 
-                        <span className="text-sm">
-                            {backupsOpen ? "▼" : "▶"}
-                        </span>
+                        {backupsOpen
+                            ? <ChevronDown size={16} />
+                            : <ChevronRight size={16} />
+                        }
                     </button>
 
                     {backupsOpen && (
@@ -87,23 +102,23 @@ export default function Sidebar() {
 
                             <Link
                                 href="/dashboard/backups"
-                                className={`px-3 py-2 rounded text-sm ${pathname ===
-                                    "/dashboard/backups"
+                                className={`px-3 py-2 rounded text-sm flex items-center gap-3 ${pathname === "/dashboard/backups"
                                     ? "bg-gray-800 text-white"
                                     : "text-gray-300 hover:bg-gray-900"
                                     }`}
                             >
+                                <History size={16} />
                                 History
                             </Link>
 
                             <Link
                                 href="/dashboard/backups/downloads"
-                                className={`px-3 py-2 rounded text-sm ${pathname ===
-                                    "/dashboard/backups/downloads"
+                                className={`px-3 py-2 rounded text-sm flex items-center gap-3 ${pathname === "/dashboard/backups/downloads"
                                     ? "bg-gray-800 text-white"
                                     : "text-gray-300 hover:bg-gray-900"
                                     }`}
                             >
+                                <Archive size={16} />
                                 Available Backups
                             </Link>
 
@@ -115,11 +130,12 @@ export default function Sidebar() {
                 {/* Settings */}
                 <Link
                     href={links[3].href}
-                    className={`px-3 py-2 rounded ${isActive(links[3].href)
-                        ? "bg-gray-700"
-                        : "hover:bg-gray-800"
+                    className={`px-3 py-2 rounded flex items-center gap-3 ${isActive(links[3].href)
+                            ? "bg-gray-700"
+                            : "hover:bg-gray-800"
                         }`}
                 >
+                    <Settings size={18} />
                     {links[3].name}
                 </Link>
 

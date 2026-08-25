@@ -12,6 +12,6 @@ export default function ThemeButton() {
     if (!mounted) return null;
 
     return <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="px-3 py-2 rounded-md border">
-        {theme === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
+        {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
     </button>;
 }

@@ -27,7 +27,7 @@ export function useDataTable<T>({
     const [totalPages, setTotalPages] = useState(1);
 
     const [sort, setSort] = useState(defaultSort);
-    const [order, setOrder] = useState<"asc" | "desc">("asc");
+    const [order, setOrder] = useState<"asc" | "desc">("desc");
 
     const debouncedSearch = useDebounce(search);
 

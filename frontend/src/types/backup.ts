@@ -8,6 +8,11 @@ export interface Backup {
     project: {
         name: string;
     };
+
+    weeklyKey: string | null;
+    monthlyKey: string | null;
+    startedAt: string | null;
+    finishedAt: string | null;
 }
 
 export type AvailableBackup = {

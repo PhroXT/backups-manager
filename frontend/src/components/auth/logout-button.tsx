@@ -1,5 +1,6 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -20,8 +21,9 @@ export default function LogoutButton() {
     return (
         <button
             onClick={logout}
-            className="w-full px-3 py-2 mt-2 rounded text-left hover:bg-gray-800"
+            className="w-full px-3 py-2 mt-2 rounded text-left hover:bg-gray-800 flex items-center gap-2"
         >
+            <LogOut size={18} />
             Logout
         </button>
     );
