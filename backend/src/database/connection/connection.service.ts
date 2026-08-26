@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { spawn } from 'child_process';
+import { EncryptionService } from '../../common/encryption/encryption.service';
 
 @Injectable()
 export class ConnectionService {
+
+    constructor(
+        private readonly encryptionService: EncryptionService,
+    ) { }
 
     async testPostgresConnection(config: {
         host: string;
@@ -18,9 +23,14 @@ export class ConnectionService {
             message: string;
         }>((resolve) => {
 
+            const password =
+                this.encryptionService.decrypt(
+                    config.password,
+                );
+
             const args = [
                 'exec',
-                '-e', `PGPASSWORD=${config.password}`,
+                '-e', `PGPASSWORD=${password}`,
                 '-e', `PGSSLMODE=${config.sslMode}`,
                 'backups-manager-tools',
                 'psql',

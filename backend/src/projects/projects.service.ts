@@ -6,6 +6,7 @@ import { PaginationDto } from "../common/dto/pagination.dto";
 import { PaginationService } from '../common/pagination/pagination.service';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UsersService } from '../auth/users.service';
+import { EncryptionService } from '../common/encryption/encryption.service';
 
 @Injectable()
 export class ProjectsService {
@@ -14,6 +15,7 @@ export class ProjectsService {
         private connectionService: ConnectionService,
         private paginationService: PaginationService,
         private usersService: UsersService,
+        private encryptionService: EncryptionService,
     ) { }
 
     async findAll(query: PaginationDto) {
@@ -31,13 +33,37 @@ export class ProjectsService {
                     "name",
                     "createdAt",
                 ],
-            }
+            },
+            {
+                select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    host: true,
+                    port: true,
+                    database: true,
+                    username: true,
+                    sslMode: true,
+                    enabled: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            },
         );
     }
 
-    create(data: CreateProjectDto) {
+    async create(data: CreateProjectDto) {
+
+        const password =
+            this.encryptionService.encrypt(
+                data.password,
+            );
+
         return this.prisma.project.create({
-            data,
+            data: {
+                ...data,
+                password,
+            },
         });
     }
 
@@ -54,9 +80,22 @@ export class ProjectsService {
     }
 
     async update(id: string, data: UpdateProjectDto) {
+
+        const updateData = {
+            ...data,
+            ...(data.password
+                ? {
+                    password:
+                        this.encryptionService.encrypt(
+                            data.password,
+                        ),
+                }
+                : {}),
+        };
+
         return this.prisma.project.update({
             where: { id },
-            data,
+            data: updateData,
         });
     }
 

@@ -11,6 +11,7 @@ import { SchedulesModule } from './schedules/schedules.module';
 import { CommonModule } from "./common/common.module";
 import { AuthModule } from './auth/auth.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { EncryptionModule } from './common/encryption/encryption.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     AuthModule,
     SchedulesModule,
     NotificationsModule,
+    EncryptionModule
   ]
 })
 export class AppModule { }
