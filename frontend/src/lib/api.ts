@@ -18,6 +18,29 @@ export async function apiFetch<T>(
 
   const data = await response.json().catch(() => null);
 
+  if (response.status === 401) {
+
+    const isLoginRequest =
+      endpoint === "/auth/login";
+
+    if (
+      !isLoginRequest &&
+      window.location.pathname !== "/login"
+    ) {
+      window.location.href = "/login";
+    }
+
+    throw new Error(
+      isLoginRequest
+        ? (
+          Array.isArray(data?.message)
+            ? data.message.join(", ")
+            : data?.message || "Invalid credentials"
+        )
+        : "Session expired",
+    );
+  }
+
   if (!response.ok) {
     const message =
       Array.isArray(data?.message)

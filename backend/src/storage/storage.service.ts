@@ -101,12 +101,19 @@ export class StorageService implements OnModuleInit {
     async getDownloadUrl(
         bucket: string,
         objectName: string,
+        downloadFilename?: string,
         expiry = 60 * 10,
     ) {
         return this.client.presignedGetObject(
             bucket,
             objectName,
             expiry,
+            downloadFilename
+                ? {
+                    "response-content-disposition":
+                        `attachment; filename="${downloadFilename}"`,
+                }
+                : undefined,
         );
     }
 

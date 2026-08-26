@@ -25,7 +25,7 @@ export default function Alert({
     message,
     onClose,
     className = "",
-    durationMs = 1000,
+    durationMs = 1500,
 }: AlertProps) {
     const [progress, setProgress] = useState(100);
 

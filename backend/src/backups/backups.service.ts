@@ -422,6 +422,12 @@ export class BackupsService {
                 id: true,
                 filename: true,
                 status: true,
+                createdAt: true,
+                project: {
+                    select: {
+                        name: true,
+                    },
+                },
             },
         });
 
@@ -445,9 +451,25 @@ export class BackupsService {
             return null;
         }
 
+        const projectName =
+            backup.project?.name
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-zA-Z0-9_-]/g, '');
+
+        const date =
+            backup.createdAt
+                .toISOString()
+                .slice(0, 10)
+                .replace(/-/g, '');
+
+        const downloadFilename =
+            `${projectName}-${date}.dump`;
+
         const url = await this.storage.getDownloadUrl(
             'backups',
             backup.filename,
+            downloadFilename,
         );
 
         return {

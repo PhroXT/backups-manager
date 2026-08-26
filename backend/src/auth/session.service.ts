@@ -26,10 +26,10 @@ export class SessionService {
         return sessionDurationToMs(this.expiresIn);
     }
 
-    verifyToken(token: string): { sub: string } {
-        return jwt.verify(
-            token,
-            this.secret,
-        ) as { sub: string };
+    verifyToken(token: string): { sub: string; exp: number } {
+        return jwt.verify(token, this.secret) as {
+            sub: string;
+            exp: number;
+        };
     }
 }

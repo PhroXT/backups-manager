@@ -19,6 +19,21 @@ export class AuthController {
         private readonly sessionService: SessionService,
     ) { }
 
+    @Get('session')
+    session(@Req() request: Request) {
+
+        const token = request.cookies?.auth;
+
+        const payload =
+            this.sessionService.verifyToken(token);
+
+        return {
+            expiresAt: new Date(
+                payload.exp * 1000,
+            ),
+        };
+    }
+
     @Get('me')
     me(@Req() request: Request) {
         return request.user;
@@ -88,6 +103,48 @@ export class AuthController {
             id: user.id,
             username: user.username,
             email: user.email,
+        };
+    }
+
+    @Post('session/extend')
+    extendSession(
+        @Req() request: Request,
+        @Res({ passthrough: true }) response: Response,
+    ) {
+
+        const token = request.cookies?.auth;
+
+        const payload =
+            this.sessionService.verifyToken(token);
+
+        const newToken =
+            this.sessionService.createToken(
+                payload.sub,
+            );
+
+        response.cookie(
+            'auth',
+            newToken,
+            {
+                httpOnly: true,
+                secure:
+                    process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                path: '/',
+                maxAge:
+                    this.sessionService.getExpirationMs(),
+            },
+        );
+
+        const newPayload =
+            this.sessionService.verifyToken(
+                newToken,
+            );
+
+        return {
+            expiresAt: new Date(
+                newPayload.exp * 1000,
+            ),
         };
     }
 }
