@@ -117,4 +117,36 @@ export class StorageService implements OnModuleInit {
         );
     }
 
+    async getBucketSize(bucket: string): Promise<number> {
+
+        return new Promise((resolve, reject) => {
+
+            let total = 0;
+
+            const stream =
+                this.client.listObjectsV2(
+                    bucket,
+                    '',
+                    true,
+                );
+
+            stream.on('data', (object) => {
+
+                if (object.size) {
+                    total += object.size;
+                }
+
+            });
+
+            stream.on('end', () => {
+                resolve(total);
+            });
+
+            stream.on('error', (error) => {
+                reject(error);
+            });
+
+        });
+    }
+
 }
