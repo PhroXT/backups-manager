@@ -24,9 +24,20 @@ export class BackupsController {
     async create(
         @Param('id') id: string,
     ) {
-        //return this.backupsService.create(id);
+        const days = [
+            'sunday',
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+            'saturday',
+        ];
+
+        const weeklyKey = days[new Date().getDay()];
+
         return this.backupsService.create(id, {
-            weeklyKey: 'monday',
+            weeklyKey,
         });
     }
 
