@@ -47,6 +47,10 @@ export class ProjectsService {
                     enabled: true,
                     createdAt: true,
                     updatedAt: true,
+                    sshEnabled: true,
+                    sshHost: true,
+                    sshPort: true,
+                    sshUsername: true,
                 },
             },
         );
@@ -59,10 +63,18 @@ export class ProjectsService {
                 data.password,
             );
 
+        const sshPassword =
+            data.sshPassword
+                ? this.encryptionService.encrypt(
+                    data.sshPassword,
+                )
+                : null;
+
         return this.prisma.project.create({
             data: {
                 ...data,
                 password,
+                sshPassword,
             },
         });
     }
@@ -88,6 +100,14 @@ export class ProjectsService {
                     password:
                         this.encryptionService.encrypt(
                             data.password,
+                        ),
+                }
+                : {}),
+            ...(data.sshPassword
+                ? {
+                    sshPassword:
+                        this.encryptionService.encrypt(
+                            data.sshPassword,
                         ),
                 }
                 : {}),

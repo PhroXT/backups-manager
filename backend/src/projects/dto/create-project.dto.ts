@@ -28,5 +28,25 @@ export class CreateProjectDto {
 
     @IsOptional()
     @IsBoolean()
+    sshEnabled?: boolean;
+
+    @IsOptional()
+    @IsString()
+    sshHost?: string;
+
+    @IsOptional()
+    @IsInt()
+    sshPort?: number;
+
+    @IsOptional()
+    @IsString()
+    sshUsername?: string;
+
+    @IsOptional()
+    @IsString()
+    sshPassword?: string;
+
+    @IsOptional()
+    @IsBoolean()
     enabled?: boolean;
 }

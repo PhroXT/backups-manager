@@ -23,6 +23,11 @@ type ProjectForm = {
     password: string;
     sslMode: string;
     enabled: boolean;
+    sshEnabled: boolean;
+    sshHost: string;
+    sshPort: number;
+    sshUsername: string;
+    sshPassword: string;
 };
 
 const emptyForm: ProjectForm = {
@@ -35,6 +40,11 @@ const emptyForm: ProjectForm = {
     password: "",
     sslMode: "prefer",
     enabled: true,
+    sshEnabled: false,
+    sshHost: "",
+    sshPort: 22,
+    sshUsername: "",
+    sshPassword: "",
 };
 
 export default function ProjectModal({
@@ -64,6 +74,11 @@ export default function ProjectModal({
                 password: "",
                 sslMode: project.sslMode,
                 enabled: project.enabled,
+                sshEnabled: project.sshEnabled ?? false,
+                sshHost: project.sshHost ?? "",
+                sshPort: project.sshPort ?? 22,
+                sshUsername: project.sshUsername ?? "",
+                sshPassword: "",
             });
         } else {
             setForm(emptyForm);
@@ -77,7 +92,10 @@ export default function ProjectModal({
 
         setForm((current) => ({
             ...current,
-            [name]: name === "port" ? Number(value) : value,
+            [name]:
+                name === "port" || name === "sshPort"
+                    ? Number(value)
+                    : value,
         }));
     }
 
@@ -107,6 +125,15 @@ export default function ProjectModal({
                 ...(form.password
                     ? { password: form.password }
                     : {}),
+                ...(form.sshPassword
+                    ? { sshPassword: form.sshPassword }
+                    : {}),
+                sshEnabled: form.sshEnabled,
+                sshHost: form.sshEnabled ? form.sshHost : undefined,
+                sshPort: form.sshEnabled ? form.sshPort : undefined,
+                sshUsername: form.sshEnabled
+                    ? form.sshUsername
+                    : undefined,
             };
 
             if (isEditing && project) {
@@ -217,6 +244,75 @@ export default function ProjectModal({
                     <option value="verify-ca">Verify CA</option>
                     <option value="verify-full">Verify Full</option>
                 </select>
+
+                <label className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        name="sshEnabled"
+                        checked={form.sshEnabled ?? false}
+                        onChange={(event) =>
+                            setForm((current) => ({
+                                ...current,
+                                sshEnabled: event.target.checked,
+                            }))
+                        }
+                    />
+
+                    <span className="text-sm">
+                        Use SSH Tunnel
+                    </span>
+                </label>
+
+                {form.sshEnabled && (
+                    <div className="space-y-4 rounded border p-4">
+                        <div className="text-sm font-medium">
+                            SSH Configuration
+                        </div>
+
+                        <input
+                            name="sshHost"
+                            placeholder="SSH Host"
+                            value={form.sshHost}
+                            onChange={handleChange}
+                            className="w-full border p-2 rounded"
+                            required
+                        />
+
+                        <input
+                            name="sshPort"
+                            type="number"
+                            placeholder="SSH Port"
+                            value={form.sshPort}
+                            onChange={handleChange}
+                            className="w-full border p-2 rounded"
+                            required
+                        />
+
+                        <input
+                            name="sshUsername"
+                            placeholder="SSH Username"
+                            value={form.sshUsername}
+                            onChange={handleChange}
+                            className="w-full border p-2 rounded"
+                            required
+                        />
+
+                        <input
+                            name="sshPassword"
+                            type="password"
+                            placeholder={
+                                isEditing
+                                    ? "Leave blank to keep current password"
+                                    : "SSH Password"
+                            }
+                            value={form.sshPassword}
+                            onChange={handleChange}
+                            className="w-full border p-2 rounded"
+                            required={!isEditing}
+                        />
+                    </div>
+                )}
+
 
                 {isEditing && (
                     <label className="flex items-center gap-2">

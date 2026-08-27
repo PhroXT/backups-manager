@@ -2,15 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { spawn, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { SshTunnelService } from '../database/ssh/ssh-tunnel.service';
 
 const PG_DUMP_INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class BackupRunnerService {
 
-    private readonly processes = new Map<string, ChildProcess>();
+    constructor(
+        private readonly sshTunnelService: SshTunnelService,
+    ) { }
 
-    async validatePgDump(filename: string): Promise<void> {
+    private readonly processes =
+        new Map<string, ChildProcess>();
+
+
+    async validatePgDump(
+        filename: string,
+    ): Promise<void> {
 
         const args = [
             'exec',
@@ -22,38 +31,51 @@ export class BackupRunnerService {
 
         return new Promise((resolve, reject) => {
 
-            const child = spawn('docker', args);
+            const child = spawn(
+                'docker',
+                args,
+            );
 
             let stderr = '';
 
             child.stdout.resume();
 
-            child.stderr.on('data', (data: Buffer) => {
-                stderr += data.toString();
-            });
+            child.stderr.on(
+                'data',
+                (data: Buffer) => {
+                    stderr += data.toString();
+                },
+            );
 
-            child.on('error', (error) => {
-                reject(error);
-            });
+            child.on(
+                'error',
+                (error) => {
+                    reject(error);
+                },
+            );
 
-            child.on('close', (code) => {
+            child.on(
+                'close',
+                (code) => {
 
-                if (code === 0) {
-                    resolve();
-                    return;
-                }
+                    if (code === 0) {
+                        resolve();
+                        return;
+                    }
 
-                reject(
-                    new Error(
-                        stderr.trim() ||
-                        `pg_restore validation failed with code ${code}`,
-                    ),
-                );
-            });
+                    reject(
+                        new Error(
+                            stderr.trim() ||
+                            `pg_restore validation failed with code ${code}`,
+                        ),
+                    );
+                },
+            );
         });
     }
 
-    runPgDump(config: {
+
+    async runPgDump(config: {
         backupId: string;
         host: string;
         port: number;
@@ -62,66 +84,167 @@ export class BackupRunnerService {
         password: string;
         sslMode: string;
         filename: string;
+
+        //For SSH
+        sshEnabled: boolean;
+        sshHost?: string | null;
+        sshPort?: number | null;
+        sshUsername?: string | null;
+        sshPassword?: string | null;
+
         onProgress?: (info: {
             bytes: number;
             elapsedMs: number;
         }) => void;
+
     }): Promise<{
         success: true;
         file: string;
     }> {
 
-        return new Promise((resolve, reject) => {
+        let tunnel:
+            Awaited<
+                ReturnType<
+                    SshTunnelService['openTunnel']
+                >
+            > | null = null;
 
-            const args = [
-                'exec',
-                '-e', `PGPASSWORD=${config.password}`,
-                '-e', `PGSSLMODE=${config.sslMode}`,
-                'backups-manager-tools',
-                'pg_dump',
-                '-h', config.host,
-                '-p', String(config.port),
-                '-U', config.username,
-                '-d', config.database,
-                '-F', 'c',
-                '-f', `/backup/${config.filename}`,
-            ];
+        if (config.sshEnabled) {
 
-            const file = path.join(
-                process.cwd(),
-                '..',
-                'storage',
-                config.filename,
-            );
+            if (
+                !config.sshHost ||
+                !config.sshPort ||
+                !config.sshUsername ||
+                !config.sshPassword
+            ) {
 
-            const startedAt = Date.now();
-
-            const child = spawn('docker', args);
-
-            this.processes.set(
-                config.backupId,
-                child,
-            );
-
-            let stderr = '';
-            let lastSize = 0;
-            let lastProgressAt = Date.now();
-            let settled = false;
-
-            const cleanup = () => {
-
-                clearInterval(progressInterval);
-
-                this.processes.delete(
-                    config.backupId,
+                throw new Error(
+                    'SSH configuration is incomplete',
                 );
-            };
+            }
 
-            const terminate = async (): Promise<void> => {
+            tunnel =
+                await this.sshTunnelService.openTunnel({
+                    sshHost: config.sshHost,
+                    sshPort: config.sshPort,
+                    sshUsername: config.sshUsername,
+                    sshPassword: config.sshPassword,
+
+                    remoteHost: config.host,
+                    remotePort: config.port,
+                });
+        }
+
+        const databaseHost =
+            tunnel
+                ? '127.0.0.1'
+                : config.host;
+        4
+        const databasePort =
+            tunnel
+                ? tunnel.localPort
+                : config.port;
+
+        const file = path.join(
+            process.cwd(),
+            '..',
+            'storage',
+            config.filename,
+        );
+
+        const args = [
+            'exec',
+
+            '-e',
+            `PGPASSWORD=${config.password}`,
+
+            '-e',
+            `PGSSLMODE=${config.sslMode}`,
+
+            'backups-manager-tools',
+
+            'pg_dump',
+
+            '-h',
+            databaseHost,
+
+            '-p',
+            String(databasePort),
+
+            '-U',
+            config.username,
+
+            '-d',
+            config.database,
+
+            '-F',
+            'c',
+
+            '-f',
+            `/backup/${config.filename}`,
+        ];
+
+        console.log(
+            '[pg_dump] starting',
+            {
+                backupId: config.backupId,
+                host: databaseHost,
+                port: databasePort,
+                database: config.database,
+                username: config.username,
+                sshEnabled: config.sshEnabled,
+            },
+        );
+
+
+        const startedAt = Date.now();
+
+        const child =
+            spawn(
+                'docker',
+                args,
+            );
+
+
+        this.processes.set(
+            config.backupId,
+            child,
+        );
+
+
+        let stderr = '';
+        let lastSize = 0;
+        let lastProgressAt = Date.now();
+        let settled = false;
+
+        const cleanup = async () => {
+
+            clearInterval(progressInterval);
+
+            this.processes.delete(
+                config.backupId,
+            );
+
+            if (tunnel) {
 
                 try {
 
-                    const killer = spawn(
+                    await this.sshTunnelService.closeTunnel(tunnel);
+
+                } catch {
+                    //Nothing else to do.
+                }
+
+                tunnel = null;
+            }
+        };
+
+        const terminate = async (): Promise<void> => {
+
+            try {
+
+                const killer =
+                    spawn(
                         'docker',
                         [
                             'exec',
@@ -133,22 +256,33 @@ export class BackupRunnerService {
                         ],
                     );
 
-                    await new Promise<void>((resolve) => {
 
-                        killer.on('close', () => {
-                            resolve();
-                        });
+                await new Promise<void>(
+                    (resolve) => {
 
-                        killer.on('error', () => {
-                            resolve();
-                        });
-                    });
+                        killer.on(
+                            'close',
+                            () => {
+                                resolve();
+                            },
+                        );
 
-                } catch {
-                }
-            };
+                        killer.on(
+                            'error',
+                            () => {
+                                resolve();
+                            },
+                        );
+                    },
+                );
 
-            const progressInterval = setInterval(
+            } catch {
+                //Nothing else to do.
+            }
+        };
+
+        const progressInterval =
+            setInterval(
                 async () => {
 
                     if (settled) {
@@ -158,26 +292,43 @@ export class BackupRunnerService {
                     try {
 
                         const stats =
-                            await fs.promises.stat(file);
+                            await fs.promises.stat(
+                                file,
+                            );
 
-                        const now = Date.now();
-                        const currentSize = stats.size;
+                        const now =
+                            Date.now();
 
-                        if (currentSize > lastSize) {
+                        const currentSize =
+                            stats.size;
 
-                            lastSize = currentSize;
-                            lastProgressAt = now;
 
+                        if (
+                            currentSize >
+                            lastSize
+                        ) {
+
+                            lastSize =
+                                currentSize;
+
+                            lastProgressAt =
+                                now;
                         }
 
+
                         config.onProgress?.({
-                            bytes: currentSize,
+                            bytes:
+                                currentSize,
+
                             elapsedMs:
                                 now - startedAt,
                         });
 
+
                         const inactiveFor =
-                            now - lastProgressAt;
+                            now -
+                            lastProgressAt;
+
 
                         if (
                             inactiveFor >=
@@ -186,128 +337,182 @@ export class BackupRunnerService {
 
                             settled = true;
 
-                            cleanup();
 
                             console.error(
                                 `[pg_dump] INACTIVITY TIMEOUT backup=${config.backupId}`,
                                 {
                                     inactiveForMs:
                                         inactiveFor,
+
                                     lastSize,
+
                                     filename:
                                         config.filename,
                                 },
                             );
 
+
                             await terminate();
 
-                            reject(
-                                new Error(
-                                    `pg_dump stopped after ${PG_DUMP_INACTIVITY_TIMEOUT_MS / 60000} minutes without progress`,
-                                ),
+                            await cleanup();
+
+
+                            throw new Error(
+                                `pg_dump stopped after ${PG_DUMP_INACTIVITY_TIMEOUT_MS / 60000} minutes without progress`,
                             );
                         }
 
-                    } catch {
+                    } catch (error) {
+
+                        if (
+                            error instanceof Error &&
+                            error.message.startsWith(
+                                'pg_dump stopped after',
+                            )
+                        ) {
+
+                            return;
+                        }
                     }
 
                 },
                 10000,
             );
 
-            child.stderr.on('data', (data: Buffer) => {
 
-                stderr += data.toString();
+        child.stderr.on(
+            'data',
+            (data: Buffer) => {
 
-            });
+                stderr +=
+                    data.toString();
+            },
+        );
 
-            child.on('error', (error) => {
+        return new Promise(
+            (resolve, reject) => {
 
-                if (settled) {
-                    return;
-                }
+                child.on(
+                    'error',
+                    async (error) => {
 
-                settled = true;
+                        if (settled) {
+                            return;
+                        }
 
-                cleanup();
+                        settled = true;
 
-                reject(error);
-            });
+                        await cleanup();
 
-            child.on('exit', (code, signal) => {
-
-                console.log(
-                    `[pg_dump] EXIT backup=${config.backupId}`,
-                    {
-                        code,
-                        signal,
+                        reject(error);
                     },
                 );
 
-            });
 
-            child.on('close', (code, signal) => {
+                child.on(
+                    'exit',
+                    (code, signal) => {
 
-                if (settled) {
-                    return;
-                }
-
-                settled = true;
-
-                cleanup();
-
-                if (code === 0) {
-
-                    resolve({
-                        success: true,
-                        file: config.filename,
-                    });
-
-                    return;
-                }
-
-                reject(
-                    new Error(
-                        stderr.trim() ||
-                        `pg_dump exited with code ${code}${signal
-                            ? ` by signal ${signal}`
-                            : ''}`,
-                    ),
+                        console.log(
+                            `[pg_dump] EXIT backup=${config.backupId}`,
+                            {
+                                code,
+                                signal,
+                            },
+                        );
+                    },
                 );
-            });
-        });
+
+
+                child.on(
+                    'close',
+                    async (code, signal) => {
+
+                        if (settled) {
+                            return;
+                        }
+
+                        settled = true;
+
+                        await cleanup();
+
+
+                        if (code === 0) {
+
+                            resolve({
+                                success: true,
+                                file:
+                                    config.filename,
+                            });
+
+                            return;
+                        }
+
+
+                        reject(
+                            new Error(
+                                stderr.trim() ||
+                                `pg_dump exited with code ${code}${signal
+                                    ? ` by signal ${signal}`
+                                    : ''}`,
+                            ),
+                        );
+                    },
+                );
+            },
+        );
     }
 
-    async cancel(backupId: string): Promise<boolean> {
 
-        const child = this.processes.get(backupId);
+    async cancel(
+        backupId: string,
+    ): Promise<boolean> {
+
+        const child =
+            this.processes.get(
+                backupId,
+            );
+
 
         if (!child) {
             return false;
         }
 
-        const filename = `${backupId}.dump`;
 
-        await new Promise<void>((resolve, reject) => {
+        const filename =
+            `${backupId}.dump`;
 
-            const killer = spawn(
-                'docker',
-                [
-                    'exec',
-                    'backups-manager-tools',
-                    'pkill',
-                    '-TERM',
-                    '-f',
-                    filename,
-                ],
-            );
 
-            killer.on('error', reject);
+        await new Promise<void>(
+            (resolve, reject) => {
 
-            killer.on('close', () => {
-                resolve();
-            });
-        });
+                const killer =
+                    spawn(
+                        'docker',
+                        [
+                            'exec',
+                            'backups-manager-tools',
+                            'pkill',
+                            '-TERM',
+                            '-f',
+                            filename,
+                        ],
+                    );
+
+
+                killer.on(
+                    'error',
+                    reject,
+                );
+
+                killer.on(
+                    'close',
+                    () => {
+                        resolve();
+                    },
+                );
+            },
+        );
 
         return true;
     }

@@ -8,4 +8,8 @@ export interface Project {
     username: string;
     enabled: boolean;
     sslMode: string;
+    sshEnabled: boolean;
+    sshHost: string | null;
+    sshPort: number | null;
+    sshUsername: string | null;
 }

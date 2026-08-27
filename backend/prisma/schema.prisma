@@ -30,6 +30,12 @@ model Project {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  sshEnabled  Boolean @default(false)
+  sshHost     String?
+  sshPort     Int?
+  sshUsername String?
+  sshPassword String?
+
   backups   Backup[]
   schedules Schedule[]
 }

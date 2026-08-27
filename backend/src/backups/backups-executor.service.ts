@@ -116,6 +116,16 @@ export class BackupExecutorService {
                 password: this.encryptionService.decrypt(backup.project.password,),
                 sslMode: backup.project.sslMode,
                 filename,
+                //For SSH
+                sshEnabled: backup.project.sshEnabled,
+                sshHost: backup.project.sshHost,
+                sshPort: backup.project.sshPort,
+                sshUsername: backup.project.sshUsername,
+                sshPassword: backup.project.sshPassword
+                    ? this.encryptionService.decrypt(
+                        backup.project.sshPassword,
+                    )
+                    : undefined,
 
                 onProgress: async ({ bytes }) => {
 

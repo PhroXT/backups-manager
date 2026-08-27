@@ -10,6 +10,7 @@ import { BackupProcessor } from './backups.processor';
 import { PaginationModule } from '../common/pagination/pagination.module';
 import { BackupRecoveryService } from './backups-recovery.service';
 import { BackupReportService } from '../notifications/reports/backup-report.service';
+import { SshModule } from '../database/ssh/ssh.module';
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { BackupReportService } from '../notifications/reports/backup-report.serv
             name: 'backups',
         }),
         PaginationModule,
+        SshModule,
     ],
     controllers: [
         BackupsController,
