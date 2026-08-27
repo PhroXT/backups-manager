@@ -1,26 +1,55 @@
-# compiled output
-/dist
-/node_modules
-/build
+# Dependencies
+node_modules/
+.pnp/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Logs
-logs
+# Build / compiled output
+dist/
+build/
+.next/
+out/
+
+
+# Tests / coverage
+coverage/
+.nyc_output/
+
+# Logs / debug
 *.log
+logs/
 npm-debug.log*
-pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 lerna-debug.log*
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Temporary / runtime files
+.temp/
+.tmp/
+temp/
+tmp/
+
+pids/
+*.pid
+*.seed
+*.pid.lock
 
 # OS
 .DS_Store
+Thumbs.db
 
-# Tests
-/coverage
-/.nyc_output
-
-# IDEs and editors
-/.idea
+# IDEs / editors
+.idea/
 .project
 .classpath
 .c9/
@@ -28,42 +57,22 @@ lerna-debug.log*
 .settings/
 *.sublime-workspace
 
-# IDE - VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+# TypeScript
+*.tsbuildinfo
 
-# temp directory
-.temp
-.tmp
+# Next.js
+.vercel/
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# Runtime / application data
+/data/
+/storage/
+/backend/storage/
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-/generated/prisma
-
-# Docker
-docker-compose.yml
-
-# MinIO
-/data
-/storage
-/backend/storage
-
-# Prisma
-/backend/prisma/migrations
+# Generated files
+/generated/
