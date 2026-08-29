@@ -139,7 +139,7 @@ export class BackupRunnerService {
             tunnel
                 ? '127.0.0.1'
                 : config.host;
-        4
+
         const databasePort =
             tunnel
                 ? tunnel.localPort
