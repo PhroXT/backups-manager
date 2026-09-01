@@ -23,6 +23,10 @@ services:
 
     container_name: backups-manager-tools
     
+    environment:
+      BACKUP_UID: "${BACKUP_UID}"
+      BACKUP_GID: "${BACKUP_GID}"
+
     volumes:
       - ./storage:/backup
 
