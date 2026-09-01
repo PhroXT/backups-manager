@@ -4,6 +4,7 @@ RUN apk add --no-cache \
     openssh-client \
     sshpass \
     netcat-openbsd
+    su-exec
 
 WORKDIR /backup
 
