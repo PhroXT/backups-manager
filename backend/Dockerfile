@@ -14,6 +14,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
+RUN pnpm prisma generate
+
 RUN pnpm build
 
 EXPOSE 3001
