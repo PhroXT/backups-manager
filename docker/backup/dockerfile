@@ -3,7 +3,7 @@ FROM postgres:16-alpine
 RUN apk add --no-cache \
     openssh-client \
     sshpass \
-    netcat-openbsd
+    netcat-openbsd \
     su-exec
 
 WORKDIR /backup
