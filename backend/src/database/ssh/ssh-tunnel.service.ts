@@ -2,193 +2,162 @@ import { Injectable } from '@nestjs/common';
 import { spawn, ChildProcess } from 'child_process';
 
 type SshTunnel = {
-    process: ChildProcess;
-    localPort: number;
+  process: ChildProcess;
+  localPort: number;
 };
 
 @Injectable()
 export class SshTunnelService {
+  private readonly containerName = 'backups-manager-tools';
 
-    private readonly containerName =
-        'backups-manager-tools';
+  async openTunnel(config: {
+    sshHost: string;
+    sshPort: number;
+    sshUsername: string;
+    sshPassword: string;
+    remoteHost: string;
+    remotePort: number;
+  }): Promise<SshTunnel> {
+    const localPort = await this.findAvailablePort();
 
-    async openTunnel(config: {
-        sshHost: string;
-        sshPort: number;
-        sshUsername: string;
-        sshPassword: string;
-        remoteHost: string;
-        remotePort: number;
-    }): Promise<SshTunnel> {
+    console.log('[SSH tunnel] opening', {
+      sshHost: config.sshHost,
+      sshPort: config.sshPort,
+      sshUsername: config.sshUsername,
+      remoteHost: config.remoteHost,
+      remotePort: config.remotePort,
+      localPort,
+    });
 
-        const localPort =
-            await this.findAvailablePort();
+    const args = [
+      'exec',
 
-        console.log(
-            '[SSH tunnel] opening',
-            {
-                sshHost: config.sshHost,
-                sshPort: config.sshPort,
-                sshUsername: config.sshUsername,
-                remoteHost: config.remoteHost,
-                remotePort: config.remotePort,
-                localPort,
-            },
-        );
+      '-u',
+      'root',
 
-        const args = [
-            'exec',
+      '-e',
+      `SSHPASS=${config.sshPassword}`,
 
-            '-u',
-            'root',
+      this.containerName,
 
-            '-e',
-            `SSHPASS=${config.sshPassword}`,
+      'sshpass',
+      '-e',
+      'ssh',
 
-            this.containerName,
+      '-o',
+      'StrictHostKeyChecking=no',
 
-            'sshpass',
-            '-e',
-            'ssh',
+      '-o',
+      'UserKnownHostsFile=/dev/null',
 
-            '-o',
-            'StrictHostKeyChecking=no',
+      '-o',
+      'ExitOnForwardFailure=yes',
 
-            '-o',
-            'UserKnownHostsFile=/dev/null',
+      '-N',
 
-            '-o',
-            'ExitOnForwardFailure=yes',
+      '-L',
+      `${localPort}:${config.remoteHost}:${config.remotePort}`,
 
-            '-N',
+      '-p',
+      String(config.sshPort),
 
-            '-L',
-            `${localPort}:${config.remoteHost}:${config.remotePort}`,
+      `${config.sshUsername}@${config.sshHost}`,
+    ];
 
-            '-p',
-            String(config.sshPort),
+    const child = spawn('docker', args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
 
-            `${config.sshUsername}@${config.sshHost}`,
-        ];
+    let stderr = '';
 
-        const child =
-            spawn(
-                'docker',
-                args,
-                {
-                    stdio: [
-                        'ignore',
-                        'pipe',
-                        'pipe',
-                    ],
-                },
-            );
+    child.stderr?.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
 
-        let stderr = '';
+    try {
+      await this.waitForTunnel(child, localPort, () => stderr);
+    } catch (error) {
+      child.kill('SIGTERM');
 
-        child.stderr?.on(
-            'data',
-            (data: Buffer) => {
-                stderr += data.toString();
-            },
-        );
-
-        try {
-
-            await this.waitForTunnel(
-                child,
-                localPort,
-                () => stderr,
-            );
-
-        } catch (error) {
-
-            child.kill('SIGTERM');
-
-            throw error;
-        }
-
-        console.log(
-            '[SSH tunnel] ready',
-            {
-                localPort,
-            },
-        );
-
-        return {
-            process: child,
-            localPort,
-        };
+      throw error;
     }
 
+    console.log('[SSH tunnel] ready', {
+      localPort,
+    });
 
-    async closeTunnel(
-        tunnel: SshTunnel,
-    ): Promise<void> {
+    return {
+      process: child,
+      localPort,
+    };
+  }
 
-        if (
-            tunnel.process.exitCode !== null
-        ) {
-            return;
-        }
+  async closeTunnel(tunnel: SshTunnel): Promise<void> {
+    console.log('[SSH tunnel] closing', {
+      localPort: tunnel.localPort,
+    });
 
-        console.log(
-            '[SSH tunnel] closing',
-            {
-                localPort: tunnel.localPort,
-            },
-        );
+    // Primero matar sshpass + ssh dentro del contenedor tools.
+    try {
+      const killer = spawn('docker', [
+        'exec',
+        '-u',
+        'root',
+        this.containerName,
+        'sh',
+        '-c',
+        `pkill -TERM -f "ssh.*-L ${tunnel.localPort}:" || true`,
+      ]);
 
-        tunnel.process.kill(
-            'SIGTERM',
-        );
-
-        await new Promise<void>((resolve) => {
-
-            const timeout =
-                setTimeout(
-                    resolve,
-                    3000,
-                );
-
-            tunnel.process.once(
-                'close',
-                () => {
-
-                    clearTimeout(
-                        timeout,
-                    );
-
-                    resolve();
-                },
-            );
+      await new Promise<void>((resolve) => {
+        killer.once('close', () => {
+          resolve();
         });
 
-        console.log(
-            '[SSH tunnel] closed',
-            {
-                localPort: tunnel.localPort,
-            },
-        );
+        killer.once('error', () => {
+          resolve();
+        });
+      });
+    } catch {
+      // Nada más que hacer.
     }
 
+    // Después cerrar el docker exec que Node mantiene.
+    if (tunnel.process.exitCode === null && !tunnel.process.killed) {
+      tunnel.process.kill('SIGTERM');
 
-    private async findAvailablePort(): Promise<number> {
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          if (tunnel.process.exitCode === null) {
+            tunnel.process.kill('SIGKILL');
+          }
 
-        return new Promise(
-            (resolve, reject) => {
+          resolve();
+        }, 3000);
 
-                const child =
-                    spawn(
-                        'docker',
-                        [
-                            'exec',
-                            '-u',
-                            'root',
-                            this.containerName,
-                            'sh',
-                            '-c',
-                            `
+        tunnel.process.once('close', () => {
+          clearTimeout(timeout);
+
+          resolve();
+        });
+      });
+    }
+
+    console.log('[SSH tunnel] closed', {
+      localPort: tunnel.localPort,
+    });
+  }
+
+  private async findAvailablePort(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const child = spawn('docker', [
+        'exec',
+        '-u',
+        'root',
+        this.containerName,
+        'sh',
+        '-c',
+        `
                             for port in $(seq 20000 20100); do
                                 if ! nc -z 127.0.0.1 "$port" 2>/dev/null; then
                                     echo "$port";
@@ -197,166 +166,94 @@ export class SshTunnelService {
                             done
                             exit 1
                             `,
-                        ],
-                    );
+      ]);
 
-                let stdout = '';
-                let stderr = '';
+      let stdout = '';
+      let stderr = '';
 
-                child.stdout.on(
-                    'data',
-                    (data: Buffer) => {
-                        stdout += data.toString();
-                    },
-                );
+      child.stdout.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
 
-                child.stderr.on(
-                    'data',
-                    (data: Buffer) => {
-                        stderr += data.toString();
-                    },
-                );
+      child.stderr.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
 
-                child.on(
-                    'error',
-                    reject,
-                );
+      child.on('error', reject);
 
-                child.on(
-                    'close',
-                    (code) => {
+      child.on('close', (code) => {
+        if (code !== 0) {
+          reject(
+            new Error(
+              stderr.trim() || 'Unable to find available SSH tunnel port',
+            ),
+          );
 
-                        if (code !== 0) {
+          return;
+        }
 
-                            reject(
-                                new Error(
-                                    stderr.trim() ||
-                                    'Unable to find available SSH tunnel port',
-                                ),
-                            );
+        const port = Number(stdout.trim());
 
-                            return;
-                        }
+        if (!Number.isInteger(port) || port <= 0) {
+          reject(new Error('Invalid SSH tunnel port'));
 
-                        const port =
-                            Number(
-                                stdout.trim(),
-                            );
+          return;
+        }
 
-                        if (
-                            !Number.isInteger(port) ||
-                            port <= 0
-                        ) {
+        resolve(port);
+      });
+    });
+  }
 
-                            reject(
-                                new Error(
-                                    'Invalid SSH tunnel port',
-                                ),
-                            );
+  private async waitForTunnel(
+    child: ChildProcess,
+    localPort: number,
+    getStderr: () => string,
+  ): Promise<void> {
+    const timeoutMs = 10000;
 
-                            return;
-                        }
+    const startedAt = Date.now();
 
-                        resolve(port);
-                    },
-                );
-            },
-        );
-    }
+    return new Promise((resolve, reject) => {
+      const check = setInterval(() => {
+        if (child.exitCode !== null) {
+          clearInterval(check);
 
+          reject(
+            new Error(
+              getStderr().trim() || `SSH exited with code ${child.exitCode}`,
+            ),
+          );
 
-    private async waitForTunnel(
-        child: ChildProcess,
-        localPort: number,
-        getStderr: () => string,
-    ): Promise<void> {
+          return;
+        }
 
-        const timeoutMs =
-            10000;
+        if (Date.now() - startedAt >= timeoutMs) {
+          clearInterval(check);
 
-        const startedAt =
-            Date.now();
+          reject(new Error(getStderr().trim() || 'SSH tunnel timed out'));
 
-        return new Promise(
-            (resolve, reject) => {
+          return;
+        }
 
-                const check =
-                    setInterval(
-                        () => {
+        const probe = spawn('docker', [
+          'exec',
+          '-u',
+          'root',
+          this.containerName,
+          'sh',
+          '-c',
+          `nc -z 127.0.0.1 ${localPort}`,
+        ]);
 
-                            if (
-                                child.exitCode !== null
-                            ) {
+        probe.on('close', (code) => {
+          if (code === 0) {
+            clearInterval(check);
 
-                                clearInterval(
-                                    check,
-                                );
-
-                                reject(
-                                    new Error(
-                                        getStderr().trim() ||
-                                        `SSH exited with code ${child.exitCode}`,
-                                    ),
-                                );
-
-                                return;
-                            }
-
-                            if (
-                                Date.now() -
-                                startedAt >=
-                                timeoutMs
-                            ) {
-
-                                clearInterval(
-                                    check,
-                                );
-
-                                reject(
-                                    new Error(
-                                        getStderr().trim() ||
-                                        'SSH tunnel timed out',
-                                    ),
-                                );
-
-                                return;
-                            }
-
-                            const probe =
-                                spawn(
-                                    'docker',
-                                    [
-                                        'exec',
-                                        '-u',
-                                        'root',
-                                        this.containerName,
-                                        'sh',
-                                        '-c',
-                                        `nc -z 127.0.0.1 ${localPort}`,
-                                    ],
-                                );
-
-                            probe.on(
-                                'close',
-                                (code) => {
-
-                                    if (
-                                        code === 0
-                                    ) {
-
-                                        clearInterval(
-                                            check,
-                                        );
-
-                                        resolve();
-                                    }
-                                },
-                            );
-
-                        },
-                        100,
-                    );
-            },
-        );
-    }
+            resolve();
+          }
+        });
+      }, 100);
+    });
+  }
 }

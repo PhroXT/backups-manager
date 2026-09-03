@@ -1,3 +1,10 @@
+allowBuilds:
+  '@prisma/client': set this to true or false
+  '@prisma/engines': set this to true or false
+  argon2: set this to true or false
+  msgpackr-extract: set this to true or false
+  prisma: set this to true or false
+  unrs-resolver: set this to true or false
 overrides:
   brace-expansion@<1.1.16: '>=1.1.16'
   brace-expansion@<1.1.17: '>=1.1.17'
